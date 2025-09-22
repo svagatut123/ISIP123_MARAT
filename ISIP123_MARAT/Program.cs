@@ -2,33 +2,55 @@
 using System.Collections.Generic;
 using System.Linq;
 
+public enum Category
+{
+    Электроника,
+    Одежда,
+    Продукты,
+    Книги,
+    Спорт
+}
+
 public class Product
 {
-    public int ProductID { get; set; }
-    public string Name { get; set; }
-    public decimal Price { get; set; }
-    public int Quantity { get; set; }
+    public string Code { get; set; }          
+    public string Name { get; set; }          
+    public decimal Price { get; set; }        
+    public int Quantity { get; set; }         
+    public bool InStock { get; set; }         
+    public Category Category { get; set; }    
 
-    public Product(int productId, string name, decimal price, int quantity)
+    public Product(string code, string name, decimal price, int quantity, Category category)
     {
-        ProductID = productId;
+        Code = code;
         Name = name;
         Price = price;
         Quantity = quantity;
+        InStock = quantity > 0; 
+        Category = category;
     }
+
     public void PrintInfo()
     {
-        Console.WriteLine($"\n id товара: {ProductID}");
+        Console.WriteLine($"\nid товара: {Code}");
         Console.WriteLine($"название: {Name}");
-        Console.WriteLine($"цена: {Price}");
+        Console.WriteLine($"цена: {Price:C}");
         Console.WriteLine($"количество: {Quantity}");
-        Console.WriteLine($"oбщ стоимость: {Price * Quantity}");
+        Console.WriteLine($"наличие: {(InStock ? "В наличии" : "Нет в наличии")}");
+        Console.WriteLine($"категория: {Category}");
+        Console.WriteLine($"общая стоимость: {Price * Quantity:C}");
+    }
+
+    public void UpdateStockStatus()
+    {
+        InStock = Quantity > 0;
     }
 }
 
 class Program
 {
     static List<Product> products = new List<Product>();
+    static int productCounter = 1; 
 
     static void Main(string[] args)
     {
@@ -36,15 +58,17 @@ class Program
 
         while (running)
         {
-            Console.WriteLine("\nуправление товарами");
-            Console.WriteLine("1. добавить товар");
-            Console.WriteLine("2. удалить товар");
-            Console.WriteLine("3. показать все товары");
-            Console.WriteLine("4. выход");
-            Console.Write("выберите действие: ");
-        
+            Console.WriteLine("\nds,thbnt ltqcndbt");
+            Console.WriteLine("1. Добавить товар");
+            Console.WriteLine("2. Удалить товар");
+            Console.WriteLine("3. Заказать поставку товара");
+            Console.WriteLine("4. Продать товар");
+            Console.WriteLine("5. Поиск товаров");
+            Console.WriteLine("6. Показать все товары");
+            Console.WriteLine("7. Выход");
+            Console.Write("Выберите действие: ");
 
-        string choice = Console.ReadLine();
+            string choice = Console.ReadLine();
 
             switch (choice)
             {
@@ -55,14 +79,23 @@ class Program
                     RemoveProduct();
                     break;
                 case "3":
-                    ShowAllProducts();
+                    SupplyProduct();
                     break;
                 case "4":
+                    SellProduct();
+                    break;
+                case "5":
+                    SearchProducts();
+                    break;
+                case "6":
+                    ShowAllProducts();
+                    break;
+                case "7":
                     running = false;
-                    Console.WriteLine("gg");
+                    Console.WriteLine("Программа завершена. До свидания!");
                     break;
                 default:
-                    Console.WriteLine("не то");
+                    Console.WriteLine("Неверный выбор. Попробуйте снова.");
                     break;
             }
         }
