@@ -34,11 +34,11 @@ public class Product
     {
         Console.WriteLine($"\nid товара: {Code}");
         Console.WriteLine($"название: {Name}");
-        Console.WriteLine($"цена: {Price:C}");
+        Console.WriteLine($"цена: {Price}");
         Console.WriteLine($"количество: {Quantity}");
         Console.WriteLine($"наличие: {(InStock ? "В наличии" : "Нет в наличии")}");
         Console.WriteLine($"категория: {Category}");
-        Console.WriteLine($"общая стоимость: {Price * Quantity:C}");
+        Console.WriteLine($"общая стоимость: {Price * Quantity}");
     }
 
     public void UpdateStockStatus()
@@ -298,7 +298,7 @@ class Program
                 product.UpdateStockStatus();
 
                 decimal totalSale = sellQuantity * product.Price;
-                Console.WriteLine($"Общая сумма продажи: {totalSale:C}");
+                Console.WriteLine($"Общая сумма продажи: {totalSale}");
             }
             else
             {
@@ -313,5 +313,106 @@ class Program
         {
             Console.WriteLine($"Ошибка при продаже товара: {ex.Message}");
         }
+    }
+
+    static void SearchProducts()
+    {
+        if (products.Count == 0)
+        {
+            Console.WriteLine("Список товаров пуст!");
+            return;
+        }
+
+        Console.WriteLine("\nпоиск товара");
+        Console.WriteLine("1. Поиск по коду");
+        Console.WriteLine("2. Поиск по названию");
+        Console.WriteLine("3. Поиск по категории");
+        Console.Write("Выберите тип поиска: ");
+
+        string searchType = Console.ReadLine();
+        var foundProducts = new List<Product>();
+
+        switch (searchType)
+        {
+            case "1": 
+                Console.Write("Введите код товара: ");
+                string code = Console.ReadLine();
+                foundProducts = products.Where(p => p.Code.Equals(code, StringComparison.OrdinalIgnoreCase)).ToList();
+                break;
+
+            case "2": 
+                Console.Write("Введите название товара ");
+                string name = Console.ReadLine();
+                foundProducts = products.Where(p => p.Name.Contains(name, StringComparison.OrdinalIgnoreCase)).ToList();
+                break;
+
+            case "3": 
+                Console.WriteLine("\nДоступные категории:");
+                foreach (var category in Enum.GetValues(typeof(Category)))
+                {
+                    Console.WriteLine($"{(int)category}. {category}");
+                }
+                Console.Write("Введите номер категории: ");
+                if (int.TryParse(Console.ReadLine(), out int categoryIndex) && Enum.IsDefined(typeof(Category), categoryIndex))
+                {
+                    Category category = (Category)categoryIndex;
+                    foundProducts = products.Where(p => p.Category == category).ToList();
+                }
+                else
+                {
+                    Console.WriteLine("Неверный номер");
+                    return;
+                }
+                break;
+
+            default:
+                Console.WriteLine("Неверный выбор ");
+                return;
+        }
+
+        if (foundProducts.Count > 0)
+        {
+            Console.WriteLine($"\nНайдено товаров: {foundProducts.Count}");
+            foreach (var product in foundProducts)
+            {
+                product.PrintInfo();
+            }
+        }
+        else
+        {
+            Console.WriteLine("Товары по вашему запросу не найденф");
+        }
+    }
+
+    static void ShowAllProducts()
+    {
+        if (products.Count == 0)
+        {
+            Console.WriteLine("Список товаров пуст");
+            return;
+        }
+
+        Console.WriteLine("\nвсе твоары");
+
+        var groupedProducts = products.GroupBy(p => p.Category)
+                                      .OrderBy(g => g.Key);
+
+        foreach (var categoryGroup in groupedProducts)
+        {
+            Console.WriteLine($"\n--- {categoryGroup.Key} ---");
+            foreach (var product in categoryGroup.OrderBy(p => p.Name))
+            {
+                Console.WriteLine($"Код: {product.Code}, Название: {product.Name}, Цена: {product.Price}, Количество: {product.Quantity}");
+            }
+        }
+
+        Console.WriteLine($"\nобщ выводы");
+        Console.WriteLine($"Всего товаров: {products.Count}");
+        Console.WriteLine($"Товаров в наличии: {products.Count(p => p.InStock)}");
+        Console.WriteLine($"Общая стоимость: {products.Sum(p => p.Price * p.Quantity)}");
+
+        Console.WriteLine("\nПо категориям:");
+        foreach (var category in Enum.GetValues(typeof(Category))) ;
+        
     }
 }
