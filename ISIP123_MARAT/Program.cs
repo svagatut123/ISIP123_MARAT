@@ -50,7 +50,7 @@ public class Product
 class Program
 {
     static List<Product> products = new List<Product>();
-    static int productCounter = 1; 
+    static int productCounter = 1;
 
     static void Main(string[] args)
     {
@@ -102,7 +102,7 @@ class Program
     }
     static string GenerateProductCode()
     {
-        return "1" + productCounter++.ToString("D3");  
+        return "1" + productCounter++.ToString("D3");
     }
 
     static void AddProduct()
@@ -177,51 +177,141 @@ class Program
     {
         if (products.Count == 0)
         {
-            Console.WriteLine(" список товаров пуст");
+            Console.WriteLine("Список товаров пуст");
             return;
         }
 
         try
         {
             Console.WriteLine("\nудаление товара");
-            Console.Write("введите id товара для удаления: ");
-            int id = int.Parse(Console.ReadLine());
+            Console.Write("Введите код товара для удаления: ");
+            string code = Console.ReadLine();
 
-            Product productToRemove = products.FirstOrDefault(p => p.ProductID == id);
+            Product productToRemove = products.FirstOrDefault(p => p.Code == code);
 
             if (productToRemove != null)
             {
                 products.Remove(productToRemove);
-                Console.WriteLine("товар успешно удален");
+                Console.WriteLine($"Товар удален");
             }
             else
             {
-                Console.WriteLine("товар с таким id не найден");
+                Console.WriteLine("Товар с таким кодом не найден");
+            }
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine("Ошибка ");
+        }
+    }
+
+    static void SupplyProduct()
+    {
+        if (products.Count == 0)
+        {
+            Console.WriteLine("Список товаров пуст! Сначала добавьте товары.");
+            return;
+        }
+
+        try
+        {
+            Console.WriteLine("\nзаказать поставку");
+            Console.Write("Введите код товара: ");
+            string code = Console.ReadLine();
+
+            Product product = products.FirstOrDefault(p => p.Code == code);
+
+            if (product != null)
+            {
+                Console.Write($"текущее количество товара '{product.Name}': {product.Quantity}");
+                Console.Write("\nвведите количество для поставки: ");
+                int supplyQuantity = int.Parse(Console.ReadLine());
+
+                if (supplyQuantity <= 0)
+                {
+                    Console.WriteLine("количество поставки должно быть больше 0");
+                    return;
+                }
+
+                product.Quantity += supplyQuantity;
+                product.UpdateStockStatus();
+
+                Console.WriteLine("поставка добавлена");
+            }
+            else
+            {
+                Console.WriteLine("товар не найден");
             }
         }
         catch (FormatException)
         {
-            Console.WriteLine("неверный формат id");
+            Console.WriteLine("ошибка ввода");
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine("Ошибка");
         }
     }
 
-    static void ShowAllProducts()
+
+    static void SellProduct()
     {
         if (products.Count == 0)
         {
-            Console.WriteLine("список пуст");
+            Console.WriteLine("Список товаров пуст!");
             return;
         }
 
-        Console.WriteLine("\nсписок всех товаров");
-        foreach (var product in products)
+        try
         {
-            product.PrintInfo();
+            Console.WriteLine("\nПродать това");
+            Console.Write("Введите код товара: ");
+            string code = Console.ReadLine();
+
+            Product product = products.FirstOrDefault(p => p.Code == code);
+
+            if (product != null)
+            {
+                if (!product.InStock)
+                {
+                    Console.WriteLine("товара нрет на складе");
+                    return;
+                }
+
+                Console.Write($"Текущее количество товара: {product.Quantity}");
+                Console.Write("\nВВЕДИТЕ КОЛИЧЕТВО ДЛЯ ПРОДАИЖИ: ");
+                int sellQuantity = int.Parse(Console.ReadLine());
+
+                if (sellQuantity <= 0)
+                {
+                    Console.WriteLine("Количество продажи должно быть больше 0");
+                    return;
+                }
+
+                if (sellQuantity > product.Quantity)
+                {
+                    Console.WriteLine("Недостаточно товара на складе");
+                    return;
+                }
+
+                product.Quantity -= sellQuantity;
+                product.UpdateStockStatus();
+
+                decimal totalSale = sellQuantity * product.Price;
+                Console.WriteLine($"Общая сумма продажи: {totalSale:C}");
+            }
+            else
+            {
+                Console.WriteLine("Товар с таким кодом не найден");
+            }
         }
-
-        Console.WriteLine($"\nвсего товаров: {products.Count}");
-        Console.WriteLine($"общ. стоимость всех товаров: {products.Sum(p => p.Price * p.Quantity)}");
+        catch (FormatException)
+        {
+            Console.WriteLine("Ошибка ввода");
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Ошибка при продаже товара: {ex.Message}");
+        }
     }
-
 }
-
