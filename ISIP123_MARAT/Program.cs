@@ -92,69 +92,84 @@ class Program
                     break;
                 case "7":
                     running = false;
-                    Console.WriteLine("Программа завершена. До свидания!");
+                    Console.WriteLine("gg");
                     break;
                 default:
-                    Console.WriteLine("Неверный выбор. Попробуйте снова.");
+                    Console.WriteLine("Неверный выбор");
                     break;
             }
         }
+    }
+    static string GenerateProductCode()
+    {
+        return "1" + productCounter++.ToString("D3");  
     }
 
     static void AddProduct()
     {
         try
         {
-            Console.WriteLine("\nдобавление нового товара");
+            Console.WriteLine("\nдобавление товара");
 
-            Console.Write("введите ID товара: ");
-            int id = int.Parse(Console.ReadLine());
+            string code = GenerateProductCode();
+            Console.WriteLine($"код: {code}");
 
-            if (products.Any(p => p.ProductID == id))
-            {
-                Console.WriteLine("товар с таким ID уже существует");
-                return;
-            }
-
-            Console.Write("введите название товара: ");
+            Console.Write("Введите название товара: ");
             string name = Console.ReadLine();
 
             if (string.IsNullOrWhiteSpace(name))
             {
-                Console.WriteLine("название не может быть пустым");
+                Console.WriteLine("Название не может быть пустым");
                 return;
             }
 
-            Console.Write("введите цену товара: ");
+            Console.Write("Введите цену товара: ");
             decimal price = decimal.Parse(Console.ReadLine());
 
             if (price <= 0)
             {
-                Console.WriteLine("цена должна быть больше 0");
+                Console.WriteLine("Цена должна быть больше 0");
                 return;
             }
 
-            Console.Write("введите количество товара: ");
+            Console.Write("Введите количество товара: ");
             int quantity = int.Parse(Console.ReadLine());
 
             if (quantity < 0)
             {
-                Console.WriteLine("количество не может быть отрицательным");
+                Console.WriteLine("Количество не может быть отрицательным");
                 return;
             }
 
-            Product newProduct = new Product(id, name, price, quantity);
+            Console.WriteLine("\nдоступные категории:");
+            foreach (var category in Enum.GetValues(typeof(Category)))
+            {
+                Console.WriteLine($"{(int)category}. {category}");
+            }
+
+            Console.Write("Выберите категорию(номер): ");
+            int categoryIndex = int.Parse(Console.ReadLine());
+
+            if (!Enum.IsDefined(typeof(Category), categoryIndex))
+            {
+                Console.WriteLine("Неверный номер категории");
+                return;
+            }
+
+            Category selectedCategory = (Category)categoryIndex;
+
+            Product newProduct = new Product(code, name, price, quantity, selectedCategory);
             products.Add(newProduct);
 
-            Console.WriteLine(" товар успешно добавлен");
+            Console.WriteLine($"товар успешно добавлен с кодом {code}!");
         }
         catch (FormatException)
         {
-            Console.WriteLine(" ошибка ввода проверьте правильность введенных данных.");
+            Console.WriteLine("oшибка ");
         }
         catch (Exception ex)
         {
-            Console.WriteLine($" произошла ошибка: {ex.Message}");
+            Console.WriteLine($"Произошла ошибка: {ex.Message}");
         }
     }
 
