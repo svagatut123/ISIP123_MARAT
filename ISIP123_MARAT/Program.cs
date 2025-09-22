@@ -20,9 +20,9 @@ public class Product
     {
         Console.WriteLine($"\n id товара: {ProductID}");
         Console.WriteLine($"название: {Name}");
-        Console.WriteLine($"цена: {Price:C}");
+        Console.WriteLine($"цена: {Price}");
         Console.WriteLine($"количество: {Quantity}");
-        Console.WriteLine($"oбщ стоимость: {Price * Quantity:C}");
+        Console.WriteLine($"oбщ стоимость: {Price * Quantity}");
     }
 }
 
@@ -172,7 +172,7 @@ class Program
         }
 
         Console.WriteLine($"\nвсего товаров: {products.Count}");
-        Console.WriteLine($"общ. стоимость всех товаров: {products.Sum(p => p.Price * p.Quantity):C}");
+        Console.WriteLine($"общ. стоимость всех товаров: {products.Sum(p => p.Price * p.Quantity)}");
     }
 
 }
