@@ -357,4 +357,79 @@ namespace TextAnalyzer
             }
         }
 
-        
+        // метод для отображения статистики по всем проанализированным текстам
+        static void ShowAllStatistics()
+        {
+            Console.WriteLine("\n=== статистика по всем текстам ===");
+
+            if (allStatistics.Count == 0)
+            {
+                Console.WriteLine("статистика отсутствует. сначала проанализируйте текст.");
+                return;
+            }
+
+            for (int i = 0; i < allStatistics.Count; i++)
+            {
+                TextStatistics stats = allStatistics[i]; // вывод заголовка для текущего анализа
+                Console.WriteLine($"\n--- анализ #{i + 1} ({stats.AnalysisDate}) ---"); // показываем превью текста
+                Console.WriteLine($"текст: {GetTextPreview(stats.Text)}");// вывод осн. показателей
+                Console.WriteLine($"слов: {stats.WordCount}, предложений: {stats.SentenceCount}");
+                Console.WriteLine($"гласные: {stats.VowelCount}, согласные: {stats.ConsonantCount}");
+                Console.WriteLine($"самое короткое слово: \"{stats.ShortestWord}\"");
+                Console.WriteLine($"самое длинное слово: \"{stats.LongestWord}\"");
+            }
+
+            // выводим сводную статистику по всем анализам
+            Console.WriteLine("\n=== сводная статистика ===");
+            Console.WriteLine($"всего проанализировано текстов: {allStatistics.Count}");
+
+            // если есть анализы, вычисляем общие показатели
+            if (allStatistics.Count > 0)
+            {
+                int totalWords = 0;
+                int totalSentences = 0;
+                int totalVowels = 0;
+                int totalConsonants = 0;
+
+                // проходим по всем анализам и суммируем показатели
+                foreach (TextStatistics stats in allStatistics)
+                {
+                    totalWords += stats.WordCount;
+                    totalSentences += stats.SentenceCount;
+                    totalVowels += stats.VowelCount;
+                    totalConsonants += stats.ConsonantCount;
+                }
+
+                // выводим суммарные показатели
+                Console.WriteLine($"общее количество слов: {totalWords}");
+                Console.WriteLine($"общее количество предложений: {totalSentences}");
+                Console.WriteLine($"общее количество гласных: {totalVowels}");
+                Console.WriteLine($"общее количество согласных: {totalConsonants}");
+                // вычисляем и выводим средние значения
+                Console.WriteLine($"среднее количество слов на текст: {totalWords / allStatistics.Count}");
+            }
+        }
+
+        //метод для проверки, является ли символ разделителем слов
+        static bool IsWordSeparator(char c)
+        {
+            // проходим по всем разделителям
+            foreach (char separator in wordSeparators)
+            {
+                if (c == separator)
+                    return true;
+            }
+            return false;
+        }
+
+        //метод для проверки, является ли символ концом предложения
+        static bool IsSentenceEnding(char c)
+        {
+            // проходим по всем знакам конца предложения
+            foreach (char ending in sentenceEndings)
+            {
+                if (c == ending)
+                    return true;
+            }
+            return false;
+        }
