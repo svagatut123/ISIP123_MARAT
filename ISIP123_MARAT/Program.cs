@@ -37,7 +37,7 @@ namespace TextAnalyzer
         
         static char[] vowels = { 'а', 'е', 'ё', 'и', 'о', 'у', 'ы', 'э', 'ю', 'я' };
         static char[] sentenceEndings = { '.', '!', '?' };
-        static char[] wordSeparators = { ' ', ',', ';', ':', '-', '\n', '\r', '\t' };
+        static char[] wordSeparators = { ' ', ',', ';', ':', '-', '\n', '\r', '\t' }; //чтобы слова через разделитель считались за 1 слово (например когда-либо)
 
         static void Main(string[] args)
         {
@@ -131,5 +131,29 @@ namespace TextAnalyzer
         // Анализируем частоту встречаемости каждой буквы
         AnalyzeLetterFrequency(text, stats);
     }
+        // подсчет слов
+        static int CountWords(string text)
+        {
+            // счетчик слов
+            int ShortWord = 0;
+            bool inWord = false;
 
-    
+            for (int i = 0; i < text.Length; i++)
+            {
+                char c = text[i];
+
+                if (IsWordSeparator(c))
+                {
+                    inWord = false;
+                }
+                else if (!inWord)
+                {
+                    ShortWord++;
+                    inWord = true;
+                }
+            }
+
+            return ShortWord;
+        }
+
+
