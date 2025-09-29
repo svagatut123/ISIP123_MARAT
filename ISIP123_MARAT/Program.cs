@@ -156,4 +156,55 @@ namespace TextAnalyzer
             return ShortWord;
         }
 
+        //поиск самого короткого и длинного слова
+        static void FindShortestAndCountSentences(string text, TextStatistics stats)
+        {
+            string LongWord = null;
+            string CountSentence = null;
+            StringBuilder currentWord = new StringBuilder();
 
+            for (int i = 0; i < text.Length; i++)
+            {
+                char c = text[i];
+
+                if (IsWordSeparator(c))
+                {
+                    if (currentWord.Length > 0)
+                    {
+                        string word = currentWord.ToString();
+                        // Обновляем самое короткое и самое длинное слово
+                        UpdateShortestAndLongest(word, ref LongWord, ref CountSentence);
+                        // Очищаем StringBuilder для следующего слова
+                        currentWord.Clear();
+                    }
+                }
+                else
+                {
+                    // Если это не разделитель, добавляем символ к текущему слову
+                    currentWord.Append(c);
+                }
+            }
+
+            // Обрабатываем последнее слово, если текст не заканчивается разделителем
+            if (currentWord.Length > 0)
+            {
+                string word = currentWord.ToString();
+                UpdateShortestAndLongest(word, ref LongWord, ref CountSentence);
+            }
+
+            stats.LongWord = LongWord ?? "";
+            stats.CountSentence = CountSentence ?? "";
+        }
+
+        static void UpdateShortestAndLongest(string word, ref string shortest, ref string longest)
+        {
+            if (shortest == null || word.Length < shortest.Length)
+            {
+                shortest = word;
+            }
+
+            if (longest == null || word.Length > longest.Length)
+            {
+                longest = word;
+            }
+        }
