@@ -73,7 +73,19 @@ class Program
         while (true)
         {
             Console.WriteLine("введите текст (мин 100 символов");
+            text = Console.ReadLine();
+            
+            if (text == null || text.Length < 100) // Проверяем, что текст не null и содержит достаточно символов
+            {
+                Console.WriteLine($"Текст должен содержать минимум 100 символов. Сейчас: {text?.Length ?? 0} символов.");
+            }
+            else
+            {
+                break;
+            }
         }
+    }
     }
 
 }
+
