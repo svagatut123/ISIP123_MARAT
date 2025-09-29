@@ -305,3 +305,56 @@ namespace TextAnalyzer
             }
         }
 
+        // метод для отображения статистики по текущему тексту
+        static void ShowCurrentStatistics(TextStatistics stats)
+        {
+            Console.WriteLine("\n=== результаты анализа ===");
+            Console.WriteLine($"дата анализа: {stats.AnalysisDate}");
+            Console.WriteLine($"общее количество символов: {stats.Text.Length}");
+            Console.WriteLine($"количество слов: {stats.WordCount}");
+            Console.WriteLine($"самое короткое слово: \"{stats.ShortestWord}\" (длина: {stats.ShortestWord.Length})");
+            Console.WriteLine($"самое длинное слово: \"{stats.LongestWord}\" (длина: {stats.LongestWord.Length})");
+            Console.WriteLine($"количество предложений: {stats.SentenceCount}");
+            Console.WriteLine($"количество гласных букв: {stats.VowelCount}");
+            Console.WriteLine($"количество согласных букв: {stats.ConsonantCount}");
+
+            Console.WriteLine("\nстатистика по буквам:");
+            if (stats.LetterFrequency.Count > 0)
+            {
+                // создаем список букв из ключей словаря
+                List<char> letters = new List<char>(stats.LetterFrequency.Keys);
+
+                // сортируем буквы по убыванию (пузырьковая сортировка)
+                for (int i = 0; i < letters.Count - 1; i++)
+                {
+                    for (int j = 0; j < letters.Count - i - 1; j++)
+                    {
+                        // сравниваем частоты двух соседних букв
+                        if (stats.LetterFrequency[letters[j]] < stats.LetterFrequency[letters[j + 1]])
+                        {
+                            // меняем буквы местами, если частота текущей меньше следующей
+                            char temp = letters[j];
+                            letters[j] = letters[j + 1];
+                            letters[j + 1] = temp;
+                        }
+                    }
+                }
+
+                // выводим отсортированный список букв с частотами
+                foreach (char letter in letters)
+                {
+                    // получаем частоту текущей буквы
+                    int frequency = stats.LetterFrequency[letter];
+                    // вычисляем процентное соотношение от общего количества букв
+                    double percentage = (double)frequency / (stats.VowelCount + stats.ConsonantCount) * 100;
+                    // выводим информацию о букве
+                    Console.WriteLine($"  {letter}: {frequency} раз ({percentage:F2}%)");
+                }
+            }
+            else
+            {
+                Console.WriteLine("  буквы не найдены");
+            }
+        }
+
+        
