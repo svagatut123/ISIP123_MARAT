@@ -13,17 +13,26 @@ namespace TextAnalyzer
     {
         class TextStatistics
         {
-            public string Text { get; set; } // Количество слов в тексте
-            public int ShortWord { get; set; } // Самое короткое слово
-            public string LongWord { get; set; } // Самое длинное слово
-            public string CountSentence { get; set; }// Количество предложений
-            public int GlasSentence { get; set; } // Количество гласных букв
-            public int VowelCount { get; set; } // Количество согласных букв
-            public int SoglasCount { get; set; } // Словарь для хранения частоты каждой буквы. get - буква, set - сколько раз встретилась
-            public Dictionary<char, int> LetterFrequency { get; set; } // Дата и время проведения анализа
+            public string Text { get; set; }
+            
+            public int WordCount { get; set; }
+            // Количество слов в тексте
+            public string ShortestWord { get; set; }
+            // Самое короткое слово
+            public string LongestWord { get; set; }
+            // Самое длинное слово
+            public int SentenceCount { get; set; }
+            // Количество предложений
+            public int VowelCount { get; set; }
+            // Количество гласных букв
+            public int ConsonantCount { get; set; }
+            // Количество согласных букв 
+            public Dictionary<char, int> LetterFrequency { get; set; }
+            // словарь для хранения частоты каждой буквы. get - буква, set - сколько раз встретилась
             public DateTime AnalysisDate { get; set; }
+            // дата и время проведения анализа
 
-           
+
             public TextStatistics()
             {
                 // словарь для частоты букв
@@ -42,7 +51,7 @@ namespace TextAnalyzer
         static void Main(string[] args)
         {
 
-            Console.WriteLine("=== Анализатор текста ===");
+            Console.WriteLine("=== анализатор текста ===");
 
             bool continueWorking = true;
             while (continueWorking)
@@ -60,10 +69,10 @@ namespace TextAnalyzer
                         break;
                     case "3":
                         continueWorking = false;
-                        Console.WriteLine("До свидания!");
+                        Console.WriteLine("до свидания!");
                         break;
                     default:
-                        Console.WriteLine("Неверный выбор. Попробуйте снова.");
+                        Console.WriteLine("неверный выбор. попробуйте снова.");
                         break;
                 }
             }
@@ -71,27 +80,27 @@ namespace TextAnalyzer
 
         static void ShowMainMenu()
         {
-            Console.WriteLine("\n=== Главное меню ===");
-            Console.WriteLine("1. Анализировать новый текст");
-            Console.WriteLine("2. Показать статистику по прошлым текстам");
-            Console.WriteLine("3. Выйти");
-            Console.Write("Выберите действие: ");
+            Console.WriteLine("\n=== главное меню ===");
+            Console.WriteLine("1. анализировать новый текст");
+            Console.WriteLine("2. показать статистику по прошлым текстам");
+            Console.WriteLine("3. выйти");
+            Console.Write("выберите действие: ");
         }
 
 
         static void AnalyzeNewText()
     {
-        Console.WriteLine("\n=== Анализ нового текста ===");
+        Console.WriteLine("\n=== анализ нового текста ===");
 
         string text;
         while (true)
         {
-            Console.WriteLine("Введите текст (минимум 100 символов):");
+            Console.WriteLine("введите текст (минимум 100 символов):");
             text = Console.ReadLine();
 
             if (text == null || text.Length < 100)
             {
-                Console.WriteLine($"Текст должен содержать минимум 100 символов. Сейчас: {text?.Length ?? 0} символов.");
+                Console.WriteLine($"текст должен содержать минимум 100 символов. сейчас: {text?.Length ?? 0} символов.");
             }
             else
             {
@@ -116,26 +125,26 @@ namespace TextAnalyzer
     {
         string text = stats.Text;
 
-        // Подсчитываем количество слов и сохраняем результат
-        stats.ShortWord = CountWords(text);
+        // подсчитываем количество слов и сохраняем результат
+        stats.WordCount = CountWords(text);
 
-        // Находим самое короткое и самое длинное слово
-        FindShortestAndCountSentences(text, stats);
+        // находим самое короткое и самое длинное слово
+        FindShortestAndLongestWords(text, stats);
 
-        // Подсчитываем количество предложений
-        stats.GlasSentence = CountSentences(text);
+        // подсчитываем количество предложений
+        stats.SentenceCount = LongestWords(text);
 
-        // Подсчитываем гласные и согласные буквы
+        // подсчитываем гласные и согласные буквы
         CountVowelsAndConsonants(text, stats);
 
-        // Анализируем частоту встречаемости каждой буквы
+        // анализируем частоту встречаемости каждой буквы
         AnalyzeLetterFrequency(text, stats);
     }
         // подсчет слов
         static int CountWords(string text)
         {
             // счетчик слов
-            int ShortWord = 0;
+            int WordCount = 0;
             bool inWord = false;
 
             for (int i = 0; i < text.Length; i++)
@@ -148,19 +157,19 @@ namespace TextAnalyzer
                 }
                 else if (!inWord)
                 {
-                    ShortWord++;
+                    WordCount++;
                     inWord = true;
                 }
             }
 
-            return ShortWord;
+            return WordCount;
         }
 
         //поиск самого короткого и длинного слова
-        static void FindShortestAndCountSentences(string text, TextStatistics stats)
+        static void FindShortestAndLongestWords(string text, TextStatistics stats)
         {
-            string LongWord = null;
-            string CountSentence = null;
+            string ShortestWord = null;
+            string LongestWord = null;
             StringBuilder currentWord = new StringBuilder();
 
             for (int i = 0; i < text.Length; i++)
@@ -172,28 +181,28 @@ namespace TextAnalyzer
                     if (currentWord.Length > 0)
                     {
                         string word = currentWord.ToString();
-                        // Обновляем самое короткое и самое длинное слово
-                        UpdateShortestAndLongest(word, ref LongWord, ref CountSentence);
-                        // Очищаем StringBuilder для следующего слова
+                        // обновляем самое короткое и самое длинное слово
+                        UpdateShortestAndLongest(word, ref ShortestWord, ref LongestWord);
+                        // очищаем StringBuilder для следующего слова
                         currentWord.Clear();
                     }
                 }
                 else
                 {
-                    // Если это не разделитель, добавляем символ к текущему слову
+                    // если это не разделитель, добавляем символ к текущему слову
                     currentWord.Append(c);
                 }
             }
 
-            // Обрабатываем последнее слово, если текст не заканчивается разделителем
+            // обрабатываем последнее слово, если текст не заканчивается разделителем
             if (currentWord.Length > 0)
             {
                 string word = currentWord.ToString();
-                UpdateShortestAndLongest(word, ref LongWord, ref CountSentence);
+                UpdateShortestAndLongest(word, ref ShortestWord, ref LongestWord);
             }
 
-            stats.LongWord = LongWord ?? "";
-            stats.CountSentence = CountSentence ?? "";
+            stats.ShortestWord = ShortestWord ?? "";
+            stats.LongestWord = LongestWord ?? "";
         }
 
         static void UpdateShortestAndLongest(string word, ref string shortest, ref string longest)
@@ -208,3 +217,40 @@ namespace TextAnalyzer
                 longest = word;
             }
         }
+
+        // кол-во предложений
+        static int LongestWords(string text)
+        {
+            // счетчик предложений
+            int SentenceCount = 0;
+            bool inSentence = false;
+
+            for (int i = 0; i < text.Length; i++)
+            {
+                char c = text[i];
+
+                // проверяем, является ли символ концом предложения
+                if (IsSentenceEnding(c))
+                {
+                    if (inSentence)
+                    {
+                        SentenceCount++; // увеличиваем счетчик предложений
+                        inSentence = false;
+                    }
+                }
+                else if (char.IsLetter(c) && !inSentence)
+                {
+                    inSentence = true; // если нашли букву и не были в предложении - значит началось новое предложение
+                }
+            }
+
+            // учитываем последнее предложение, если текст не заканчивается точкой
+            if (inSentence)
+            {
+                SentenceCount++;
+            }
+
+            return SentenceCount;
+        }
+
+        
