@@ -7,75 +7,89 @@ using System.Globalization;
 
 
 
-class Program
+namespace TextAnalyzer
 {
-    class StatText
+    class Program
     {
-        public string Text { get; set; }
-        public int WordCount { get; set; }
-        public string ShortWord { get; set; }
-        public string LongWord { get; set; }
-        public int SentencesCount { get; set; }
-        public int GlasCount { get; set; }
-        public int SoglasCount { get; set; }
-        public Dictionary<char, int> LetterFrequency { get; set; } // char - буквы, int - их кол-во
-        public DateTime AnalysisDate { get; set; } // для просмотра анализа прошлых текстов
-
-        public StatText()
+        class TextStatistics
         {
-            LetterFrequency = new Dictionary<char, int>();
-        }
-    }
-    static List<StatText>
-        allStat = new List<StatText>();
+            public string Text { get; set; } // Количество слов в тексте
+            public int ShortWord { get; set; } // Самое короткое слово
+            public string LongWord { get; set; } // Самое длинное слово
+            public string CountSentence { get; set; }// Количество предложений
+            public int GlasSentence { get; set; } // Количество гласных букв
+            public int VowelCount { get; set; } // Количество согласных букв
+            public int SoglasCount { get; set; } // Словарь для хранения частоты каждой буквы. get - буква, set - сколько раз встретилась
+            public Dictionary<char, int> LetterFrequency { get; set; } // Дата и время проведения анализа
+            public DateTime AnalysisDate { get; set; }
 
-    static char[] Glas = { 'а', 'e', 'ё', 'и', 'о', 'ы', 'у', 'э', 'ю', 'я' };
-    static char[] SentencesCount = { '.', '?', '!', ';' };
-
-    static void Main(string[] args)
-    {
-        Console.WriteLine("--анализ текста--");
-        bool ContWork = true;
-        while (ContWork)
-        {
-            ShowMainMenu();
-            string choice = Console.ReadLine();
-            switch (choice)
+           
+            public TextStatistics()
             {
-                case "1":
-                    AnalyzeNewText;
-                    break;
-                case "2":
-                    ShowAllStat;
-                    break;
-                case "3":
-                    ContWork = false;
-                    Console.WriteLine("конец программы");
-                    break;
-                default:
-                    Console.WriteLine("ошибка");
-                    break;
+                // словарь для частоты букв
+                LetterFrequency = new Dictionary<char, int>();
             }
         }
-    }
-    static void ShowMainMenu()
+
+        // список для хранения статистики по всем текстам
+        static List<TextStatistics> allStatistics = new List<TextStatistics>();
+
+        
+        static char[] vowels = { 'а', 'е', 'ё', 'и', 'о', 'у', 'ы', 'э', 'ю', 'я' };
+        static char[] sentenceEndings = { '.', '!', '?' };
+        static char[] wordSeparators = { ' ', ',', ';', ':', '-', '\n', '\r', '\t' };
+
+        static void Main(string[] args)
+        {
+
+            Console.WriteLine("=== Анализатор текста ===");
+
+            bool continueWorking = true;
+            while (continueWorking)
+            {
+                ShowMainMenu();
+                string choice = Console.ReadLine();
+
+                switch (choice)
+                {
+                    case "1":
+                        AnalyzeNewText();
+                        break;
+                    case "2":
+                        ShowAllStatistics();
+                        break;
+                    case "3":
+                        continueWorking = false;
+                        Console.WriteLine("До свидания!");
+                        break;
+                    default:
+                        Console.WriteLine("Неверный выбор. Попробуйте снова.");
+                        break;
+                }
+            }
+        }
+
+        static void ShowMainMenu()
+        {
+            Console.WriteLine("\n=== Главное меню ===");
+            Console.WriteLine("1. Анализировать новый текст");
+            Console.WriteLine("2. Показать статистику по прошлым текстам");
+            Console.WriteLine("3. Выйти");
+            Console.Write("Выберите действие: ");
+        }
+
+
+        static void AnalyzeNewText()
     {
-        Console.WriteLine("--Главное меню--");
-        Console.WriteLine("1. анализировать новый текст");
-        Console.WriteLine("2. показать статистику по прошлым текстам");
-        Console.WriteLine("3. выйти");
-        Console.Write("выбрать цифру: ");
-    }
-    static void AnalyzeNewText()
-    {
-        Console.WriteLine("--Анализ нового текста--");
+        Console.WriteLine("\n=== Анализ нового текста ===");
+
         string text;
         while (true)
         {
-            Console.WriteLine("введите текст (мин 100 символов");
+            Console.WriteLine("Введите текст (минимум 100 символов):");
             text = Console.ReadLine();
-            
-            if (text == null || text.Length < 100) // Проверяем, что текст не null и содержит достаточно символов
+
+            if (text == null || text.Length < 100)
             {
                 Console.WriteLine($"Текст должен содержать минимум 100 символов. Сейчас: {text?.Length ?? 0} символов.");
             }
@@ -84,8 +98,38 @@ class Program
                 break;
             }
         }
-    }
+
+        //новый объект для хранения статистики
+        TextStatistics stats = new TextStatistics();
+        // сохранение текста
+        stats.Text = text;
+        stats.AnalysisDate = DateTime.Now;
+
+        AnalyzeText(stats);
+
+        allStatistics.Add(stats);
+
+        ShowCurrentStatistics(stats);
     }
 
-}
+    static void AnalyzeText(TextStatistics stats)
+    {
+        string text = stats.Text;
 
+        // Подсчитываем количество слов и сохраняем результат
+        stats.ShortWord = CountWords(text);
+
+        // Находим самое короткое и самое длинное слово
+        FindShortestAndCountSentences(text, stats);
+
+        // Подсчитываем количество предложений
+        stats.GlasSentence = CountSentences(text);
+
+        // Подсчитываем гласные и согласные буквы
+        CountVowelsAndConsonants(text, stats);
+
+        // Анализируем частоту встречаемости каждой буквы
+        AnalyzeLetterFrequency(text, stats);
+    }
+
+    
