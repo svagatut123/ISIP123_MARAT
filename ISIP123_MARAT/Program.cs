@@ -433,3 +433,30 @@ namespace TextAnalyzer
             }
             return false;
         }
+
+        // вспомогательный метод для проверки, является ли символ гласной буквой
+        static bool IsVowel(char c)
+        {
+            // проходим по всем гласным буквам
+            foreach (char vowel in vowels)
+            {
+                if (c == vowel)
+                    return true;
+            }
+            return false;
+        }
+
+        // вспомогательный метод для получения укороченной версии текста
+        static string GetTextPreview(string text)
+        {
+            // длина превью текста
+            const int previewLength = 50;
+            if (text.Length <= previewLength)
+                return text;
+            else
+                // возвращаем первые 50 символов и добавляем многоточие
+                return text.Substring(0, previewLength) + "...";
+        }
+    }
+}
+
