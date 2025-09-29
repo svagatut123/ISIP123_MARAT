@@ -253,4 +253,55 @@ namespace TextAnalyzer
             return SentenceCount;
         }
 
-        
+        // метод для подсчета гласных и согласных букв
+        static void CountVowelsAndConsonants(string text, TextStatistics stats)
+        {
+            // счетчики гласных и согласных
+            int vowels = 0;
+            int consonants = 0;
+
+            foreach (char c in text)
+            {
+                if (char.IsLetter(c))
+                {
+                    char lowerC = char.ToLower(c);
+                    if (IsVowel(lowerC))
+                    {
+                        vowels++;
+                    }
+                    else
+                    {
+                        consonants++;
+                    }
+                }
+            }
+
+            stats.VowelCount = vowels;
+            stats.ConsonantCount = consonants;
+        }
+
+        // метод для анализа частоты встречаемости каждой буквы
+        static void AnalyzeLetterFrequency(string text, TextStatistics stats)
+        {
+            stats.LetterFrequency.Clear();
+
+            foreach (char c in text)
+            {
+                if (char.IsLetter(c))
+                {
+                    // приводим букву к нижнему регистру для унификации
+                    char lowerC = char.ToLower(c);
+
+                    // проверяем, есть ли уже такая буква в словаре
+                    if (stats.LetterFrequency.ContainsKey(lowerC))
+                    {
+                        stats.LetterFrequency[lowerC]++;
+                    }
+                    else
+                    {
+                        stats.LetterFrequency[lowerC] = 1;
+                    }
+                }
+            }
+        }
+
