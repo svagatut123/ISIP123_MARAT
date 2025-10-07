@@ -143,5 +143,21 @@ namespace LibraryManagement
         {
             return _books.OrderBy(b => b.Price).FirstOrDefault();
         }
+        // Сгруппировать книги по авторам и вывести количество книг каждого автора.
+        public void DisplayBooksByAuthors()
+        {
+            // Группировка по автору и подсчет количества книг
+            var booksByAuthor = _books.GroupBy(b => b.Author)
+                                      .Select(g => new { Author = g.Key, Count = g.Count() })
+                                      .OrderByDescending(g => g.Count);
+
+            Console.WriteLine("\nКоличество книг по авторам:");
+            Console.WriteLine(new string('-', 40));
+
+            foreach (var group in booksByAuthor)
+            {
+                Console.WriteLine($"Автор: {group.Author}, Количество книг: {group.Count}");
+            }
+        }
     }
 }
