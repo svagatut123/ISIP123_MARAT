@@ -159,5 +159,23 @@ namespace LibraryManagement
                 Console.WriteLine($"Автор: {group.Author}, Количество книг: {group.Count}");
             }
         }
+        // тест данные
+        public void InitializeTestData()
+        {
+            try
+            {
+                AddBook(new Book("Война и мир", "Лев Толстой", Genre.Fiction, 1869, 1200));
+                AddBook(new Book("Преступление и наказание", "Федор Достоевский", Genre.Fiction, 1866, 950));
+                AddBook(new Book("1984", "Джордж Оруэлл", Genre.Science, 1949, 800));
+                AddBook(new Book("Гарри Поттер и философский камень", "Джоан Роулинг", Genre.Fantasy, 1997, 700));
+                AddBook(new Book("Мастер и Маргарита", "Михаил Булгаков", Genre.Fiction, 1967, 1100));
+
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"Ошибка при добавлении тестовых данных: {ex.Message}");
+            }
+        }
     }
+}
 }
