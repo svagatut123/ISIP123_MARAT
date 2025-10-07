@@ -176,6 +176,27 @@ namespace LibraryManagement
                 Console.WriteLine($"Ошибка при добавлении тестовых данных: {ex.Message}");
             }
         }
-    }
+        class Program
+        {
+            static void DisplayBooks(IEnumerable<Book> books, string message = "Результаты:") //список книг
+            {
+                Console.WriteLine($"\n{message}");
+                Console.WriteLine(new string('-', 80));
+
+                var bookList = books.ToList(); 
+                if (!bookList.Any()) 
+                {
+                    Console.WriteLine("Книги не найдены.");
+                    return;
+                }
+
+                // Вывод всех книг из списка
+                foreach (var book in bookList)
+                {
+                    Console.WriteLine(book);
+                }
+                Console.WriteLine($"Всего: {bookList.Count} книг"); 
+            }
+        }
 }
 }
