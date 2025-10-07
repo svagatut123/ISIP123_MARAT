@@ -55,5 +55,93 @@ namespace LibraryManagement
             Year = year;                    // Установка года
             Price = price;                  // Установка цены
         }
+        // вывод информации о книге
+        public override string ToString()
+        {
+            return $"ID: {Id}, Название: \"{Title}\", Автор: {Author}, Жанр: {Genre}, Год: {Year}, Цена: {Price:C}";
+        }
+    }
+
+    public class Library
+    {
+        private List<Book> _books = new List<Book>(); // список всех книг
+
+        // Свойство для доступа к книгам только для чтения
+        public IReadOnlyList<Book> Books => _books.AsReadOnly();
+
+        //добавление книги
+        public void AddBook(Book book)
+        {
+            _books.Add(book); // добавление книги в список
+        }
+
+        //удаление книги по id
+        public bool RemoveBook(int id)
+        {
+            //поиск книги по id
+            var book = _books.FirstOrDefault(b => b.Id == id);
+            if (book != null)
+            {
+                _books.Remove(book); 
+                return true;         
+            }
+            return false; 
+        }
+
+        // Поиск книг по названию
+        public IEnumerable<Book> FindBooksByTitle(string title)
+        {
+            return _books.Where(b => b.Title.Contains(title, StringComparison.OrdinalIgnoreCase));
+        }
+
+        // Поиск книг по автору
+        public IEnumerable<Book> FindBooksByAuthor(string author)
+        {
+            return _books.Where(b => b.Author.Contains(author, StringComparison.OrdinalIgnoreCase));
+        }
+
+        // Поиск книг по жанру
+        public IEnumerable<Book> FindBooksByGenre(Genre genre)
+        {
+            return _books.Where(b => b.Genre == genre);
+        }
+
+        // Общий поиск книг по названию или автору
+        public IEnumerable<Book> FindBooks(string searchTerm)
+        {
+            return _books.Where(b =>
+                b.Title.Contains(searchTerm, StringComparison.OrdinalIgnoreCase) ||
+                b.Author.Contains(searchTerm, StringComparison.OrdinalIgnoreCase));
+        }
+
+        // Сортировка книг по названию
+        public IEnumerable<Book> SortByTitle()
+        {
+            return _books.OrderBy(b => b.Title);
+        }
+
+        // Сортировка книг по году издания
+        public IEnumerable<Book> SortByYear()
+        {
+            return _books.OrderBy(b => b.Year);
+        }
+
+        // Сортировка книг по году издания (по убыванию)
+        public IEnumerable<Book> SortByYearDescending()
+        {
+            return _books.OrderByDescending(b => b.Year);
+        }
+
+        // Поиск самой дорогой книги
+        public Book GetMostExpensiveBook()
+        {
+            return _books.OrderByDescending(b => b.Price).FirstOrDefault();
+        }
+
+        // Поиск самой дешевой книги
+        public Book GetCheapestBook()
+        {
+            return _books.OrderBy(b => b.Price).FirstOrDefault();
+        }
     }
 }
