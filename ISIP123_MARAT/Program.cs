@@ -3,34 +3,50 @@
 
 using System;
 using System.Collections.Generic;
-using System.Linq;
 
+// Базовый класс для всех людей в университете
 public abstract class Person
 {
-    private int Personid;
-    private string Name;
-    private int Age;
-    private string Email;
+    // Приватные поля - инкапсуляция
+    private int _personId;
+    private string _name;
+    private int _age;
+    private string _email;
 
-    private Person(int personid, string name, int age, string email)
+    // Protected конструктор - только для наследников
+    protected Person(int personId, string name, int age, string email)
     {
-        Personid = personid;
-        Name = name;
-        Age = age;
-        Email = email;
+        // Присваиваем значения полям - без этого объект будет пустым
+        _personId = personId;
+        _name = name;
+        _age = age;
+        _email = email;
     }
-    public abstract string GetRole();
 
+    // Публичные свойства для доступа к данным
+    public int PersonId => _personId;
+    public string Name => _name;
+    public int Age => _age;
+    public string Email => _email;
+
+    public abstract string GetRole(); // Абстрактный метод - полиморфизм
+
+    // Виртуальный метод - можно переопределить в наследниках
     public virtual string GetInfo()
     {
-        return $"id: {Personid}, имя: {Name}, возраст: {Age}, email: {Email}";  
+        return $"ID: {_personId}, Имя: {_name}, Возраст: {_age}";
     }
 }
-public interface MyDisplay
-{
-    string DisplayInfo();
-}
-public class Student
-{
 
-}
+// Класс студента
+public class Student : Person
+{
+    private List<Course> _courses;
+    private string _major;
+
+    public Student(int studentId, string name, int age, string email, string major)
+        : base(studentId, name, age, email) // Вызов конструктора базового класса
+    {
+        _courses = new List<Course>();
+        _major = major;
+    }
