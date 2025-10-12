@@ -117,3 +117,63 @@ public class Teacher : Person
         }
     }
 }
+
+// Класс курса
+public class Course
+{
+    private int _courseId;
+    private string _courseName;
+    private string _description;
+    private Teacher _Teacher;
+    private List<Student> _enrolledStudents;
+
+    public Course(int courseId, string courseName, string description)
+    {
+        _courseId = courseId;
+        _courseName = courseName;
+        _description = description;
+        _enrolledStudents = new List<Student>();
+        _Teacher = null;
+    }
+
+    // Свойства для доступа к данным
+    public int CourseId => _courseId;
+    public string CourseName => _courseName;
+    public string Description => _description;
+    public Teacher Teacher => _Teacher;
+    public List<Student> EnrolledStudents => _enrolledStudents;
+
+    public string GetInfo()
+    {
+        string TeacherInfo = _Teacher != null ? _Teacher.Name : "Не назначен";
+        return $"Курс: {_courseName}\nОписание: {_description}\n" +
+               $"Преподаватель: {TeacherInfo}\n" +
+               $"Студентов: {_enrolledStudents.Count}";
+    }
+
+    public void AssignTeacher(Teacher Teacher)
+    {
+        _Teacher = Teacher;
+    }
+
+    public void AddStudent(Student student)
+    {
+        if (!_enrolledStudents.Contains(student))
+        {
+            _enrolledStudents.Add(student);
+        }
+    }
+
+    public string GetStudentList()
+    {
+        if (_enrolledStudents.Count == 0)
+            return "На курс не записаны студенты";
+
+        var studentNames = "";
+        foreach (var student in _enrolledStudents)
+        {
+            studentNames += $"- {student.Name} ({student.Major})\n";
+        }
+        return studentNames;
+    }
+}
