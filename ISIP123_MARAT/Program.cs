@@ -177,3 +177,142 @@ public class Course
         return studentNames;
     }
 }
+// Главный менеджер университета
+public class UniversityManager
+{
+    private List<Student> _students;
+    private List<Teacher> _Teachers;
+    private List<Course> _courses;
+
+    public UniversityManager()
+    {
+        _students = new List<Student>();
+        _Teachers = new List<Teacher>();
+        _courses = new List<Course>();
+
+        // Добавляем тестовые данные для демонстрации
+        InitializeSampleData();
+    }
+
+    private void InitializeSampleData()
+    {
+        // Создаем преподавателей
+        AddTeacher("Иванов Петр Сергеевич", 45, "ivanov@university.ru", "Информатика");
+        AddTeacher("Сидорова Мария Ивановна", 38, "sidorova@university.ru", "Математика");
+
+        // Создаем студентов
+        AddStudent("Петров Алексей", 20, "petrov@student.ru", "Компьютерные науки");
+        AddStudent("Козлова Анна", 19, "kozlova@student.ru", "Математика");
+
+        // Создаем курсы
+        AddCourse("Программирование на C#", "Основы программирования на C#");
+        AddCourse("Высшая математика", "Математический анализ");
+
+        // Назначаем преподавателей на курсы
+        AssignTeacherToCourse(1, 1); // Иванов на Программирование
+        AssignTeacherToCourse(2, 2); // Сидорова на Математику
+
+        // Записываем студентов на курсы
+        EnrollStudentInCourse(1, 1); // Петров на Программирование
+        EnrollStudentInCourse(2, 2); // Козлова на Математику
+    }
+
+    // Методы для работы со студентами
+    public void AddStudent(string name, int age, string email, string major)
+    {
+        var studentId = _students.Count + 1;
+        var student = new Student(studentId, name, age, email, major);
+        _students.Add(student);
+    }
+
+    public Student GetStudentById(int id)
+    {
+        foreach (var student in _students)
+        {
+            if (student.PersonId == id)
+                return student;
+        }
+        return null;
+    }
+
+    public List<Student> GetAllStudents() => _students;
+    // Методы для работы с преподавателями
+    public void AddTeacher(string name, int age, string email, string department)
+    {
+        var TeacherId = _Teachers.Count + 1;
+        var Teacher = new Teacher(TeacherId, name, age, email, department);
+        _Teachers.Add(Teacher);
+    }
+
+    public Teacher GetTeacherById(int id)
+    {
+        foreach (var Teacher in _Teachers)
+        {
+            if (Teacher.PersonId == id)
+                return Teacher;
+        }
+        return null;
+    }
+
+    public List<Teacher> GetAllTeachers() => _Teachers;
+
+    // Методы для работы с курсами
+    public void AddCourse(string courseName, string description)
+    {
+        var courseId = _courses.Count + 1;
+        var course = new Course(courseId, courseName, description);
+        _courses.Add(course);
+    }
+
+    public Course GetCourseById(int id)
+    {
+        foreach (var course in _courses)
+        {
+            if (course.CourseId == id)
+                return course;
+        }
+        return null;
+    }
+
+    public List<Course> GetAllCourses() => _courses;
+
+    // Методы для связывания сущностей
+    public bool EnrollStudentInCourse(int studentId, int courseId)
+    {
+        var student = GetStudentById(studentId);
+        var course = GetCourseById(courseId);
+
+        if (student != null && course != null)
+        {
+            student.EnrollInCourse(course);
+            return true;
+        }
+        return false;
+    }
+
+    public bool AssignTeacherToCourse(int TeacherId, int courseId)
+    {
+        var Teacher = GetTeacherById(TeacherId);
+        var course = GetCourseById(courseId);
+
+        if (Teacher != null && course != null)
+        {
+            Teacher.AssignToCourse(course);
+            return true;
+        }
+        return false;
+    }
+
+    // Методы для получения информации
+    public string GetStudentCoursesInfo(int studentId)
+    {
+        var student = GetStudentById(studentId);
+        return student?.GetCourseList() ?? "Студент не найден";
+    }
+
+    public string GetCourseStudentsInfo(int courseId)
+    {
+        var course = GetCourseById(courseId);
+        return course?.GetStudentList() ?? "Курс не найден";
+    }
+}
