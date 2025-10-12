@@ -50,3 +50,70 @@ public class Student : Person
         _courses = new List<Course>();
         _major = major;
     }
+    public List<Course> Courses => _courses;
+    public string Major => _major;
+
+    // Полиморфизм - реализация абстрактного метода
+    public override string GetRole() => "Студент";
+
+    public override string GetInfo()
+    {
+        return base.GetInfo() + $", Специальность: {_major}";
+    }
+
+    public void EnrollInCourse(Course course)
+    {
+        if (!_courses.Contains(course))
+        {
+            _courses.Add(course);
+            course.AddStudent(this);
+        }
+    }
+
+    public string GetCourseList()
+    {
+        if (_courses.Count == 0)
+            return "Студент не записан на курсы";
+
+        var courseNames = "";
+        foreach (var course in _courses)
+        {
+            courseNames += $"- {course.CourseName}\n";
+        }
+        return courseNames;
+    }
+}
+
+// Класс преподавателя
+public class Teacher : Person
+{
+    private string _department;
+    private List<Course> _teachingCourses;
+
+    public Teacher(int TeacherId, string name, int age, string email, string department)
+        : base(TeacherId, name, age, email)
+    {
+        _department = department;
+        _teachingCourses = new List<Course>();
+    }
+
+    public string Department => _department;
+    public List<Course> TeachingCourses => _teachingCourses;
+
+    // Полиморфизм - своя реализация метода
+    public override string GetRole() => "Преподаватель";
+
+    public override string GetInfo()
+    {
+        return base.GetInfo() + $", Кафедра: {_department}";
+    }
+
+    public void AssignToCourse(Course course)
+    {
+        if (!_teachingCourses.Contains(course))
+        {
+            _teachingCourses.Add(course);
+            course.AssignTeacher(this);
+        }
+    }
+}
