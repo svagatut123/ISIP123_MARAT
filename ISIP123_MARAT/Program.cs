@@ -2,9 +2,10 @@
 using System;
 using System.Collections.Generic;
 
+// абстракция (общие характеристики и поведение для похожих сущностей)
 public abstract class Person
 {
-    // приватные поля - инкапсуляция
+    // приватные поля - ИНКАПСУЛЯЦИЯ (данные объектов должны быть защищены от прямого доступа)
     private int _personId;
     private string _name;
     private int _age;
@@ -12,36 +13,34 @@ public abstract class Person
 
     protected Person(int personId, string name, int age, string email)
     {
-        // присваиваем значения полям - без этого объект будет пустым
         _personId = personId;
         _name = name;
         _age = age;
         _email = email;
     }
 
-    // публичные свойства для доступа к данным
+    // публичные свойства для доступа к данным (тоже инкапсуляция)
     public int PersonId => _personId;
     public string Name => _name;
     public int Age => _age;
     public string Email => _email;
 
-    public abstract string GetRole(); // абстрактный метод - полиморфизм
+    public abstract string GetRole(); //полиморфизм (разные типы людей в университете могут иметь разное представление своей информации)
 
-    // виртуальный метод - можно переопределить в наследниках
     public virtual string GetInfo()
     {
         return $"ID: {_personId}, имя: {_name}, возраст: {_age}";
     }
 }
 
-// класс студента
+//налсдеование (студент наследуется от персон (Студенты и преподаватели имеют общие характеристики))
 public class Student : Person
 {
     private List<Course> _courses;
     private string _major;
 
     public Student(int studentId, string name, int age, string email, string major)
-        : base(studentId, name, age, email) // вызов конструктора базового класса
+        : base(studentId, name, age, email)
     {
         _courses = new List<Course>();
         _major = major;
@@ -49,7 +48,7 @@ public class Student : Person
     public List<Course> Courses => _courses;
     public string Major => _major;
 
-    // полиморфизм - реализация абстрактного метода
+    // полиморфизм (переопределяет методы abstact getinfo и virtual getrole)
     public override string GetRole() => "студент";
 
     public override string GetInfo()
@@ -57,7 +56,7 @@ public class Student : Person
         return base.GetInfo() + $", специальность: {_major}";
     }
 
-    public void EnrollInCourse(Course course)
+    public void AddInCourse(Course course)
     {
         if (!_courses.Contains(course))
         {
@@ -80,28 +79,28 @@ public class Student : Person
     }
 }
 
-// класс преподавателя
+// класс преподавателя (teacher наследуется от person)
 public class Teacher : Person
 {
-    private string _department;
+    private string _Specialnost;
     private List<Course> _teachingCourses;
 
-    public Teacher(int TeacherId, string name, int age, string email, string department)
+    public Teacher(int TeacherId, string name, int age, string email, string Specialnost)
         : base(TeacherId, name, age, email)
     {
-        _department = department;
+        _Specialnost = Specialnost;
         _teachingCourses = new List<Course>();
     }
 
-    public string Department => _department;
+    public string Specialnost => _Specialnost;
     public List<Course> TeachingCourses => _teachingCourses;
 
-    // полиморфизм - своя реализация метода
+    // полиморфизм (Разные типы людей в университете могут иметь разное представление своей информации)
     public override string GetRole() => "преподаватель";
 
     public override string GetInfo()
     {
-        return base.GetInfo() + $", кафедра: {_department}";
+        return base.GetInfo() + $", кафедра: {_Specialnost}";
     }
 
     public void AssignToCourse(Course course)
@@ -121,14 +120,14 @@ public class Course
     private string _courseName;
     private string _description;
     private Teacher _Teacher;
-    private List<Student> _enrolledStudents;
+    private List<Student> _RollOfStudent;
 
     public Course(int courseId, string courseName, string description)
     {
         _courseId = courseId;
         _courseName = courseName;
         _description = description;
-        _enrolledStudents = new List<Student>();
+        _RollOfStudent = new List<Student>();
         _Teacher = null;
     }
 
@@ -137,14 +136,14 @@ public class Course
     public string CourseName => _courseName;
     public string Description => _description;
     public Teacher Teacher => _Teacher;
-    public List<Student> EnrolledStudents => _enrolledStudents;
+    public List<Student> RollOfStudent => _RollOfStudent;
 
     public string GetInfo()
     {
         string TeacherInfo = _Teacher != null ? _Teacher.Name : "не назначен";
         return $"курс: {_courseName}\nописание: {_description}\n" +
                $"преподаватель: {TeacherInfo}\n" +
-               $"студентов: {_enrolledStudents.Count}";
+               $"студентов: {_RollOfStudent.Count}";
     }
 
     public void AssignTeacher(Teacher Teacher)
@@ -154,32 +153,32 @@ public class Course
 
     public void AddStudent(Student student)
     {
-        if (!_enrolledStudents.Contains(student))
+        if (!_RollOfStudent.Contains(student))
         {
-            _enrolledStudents.Add(student);
+            _RollOfStudent.Add(student);
         }
     }
 
     public string GetStudentList()
     {
-        if (_enrolledStudents.Count == 0)
+        if (_RollOfStudent.Count == 0)
             return "на курс не записаны студенты";
 
         var studentNames = "";
-        foreach (var student in _enrolledStudents)
+        foreach (var student in _RollOfStudent)
         {
             studentNames += $"- {student.Name} ({student.Major})\n";
         }
         return studentNames;
     }
 }
-public class UniversityManager
+public class UnievristyUpravlenie
 {
     private List<Student> _students;
     private List<Teacher> _Teachers;
     private List<Course> _courses;
 
-    public UniversityManager()
+    public UnievristyUpravlenie()
     {
         _students = new List<Student>();
         _Teachers = new List<Teacher>();
@@ -204,11 +203,11 @@ public class UniversityManager
         AddCourse("вышивка крючком");
 
 
-        AssignTeacherToCourse(1, 1);
-        AssignTeacherToCourse(2, 2);
+        AddTeacherToCourse(1, 1);
+        AddTeacherToCourse(2, 2);
 
-        EnrollStudentInCourse(1, 1); 
-        EnrollStudentInCourse(2, 2); 
+        RollOfStudentInCourse(1, 1); 
+        RollOfStudentInCourse(2, 2); 
     }
 
     // методы для работы со студентами
@@ -231,10 +230,10 @@ public class UniversityManager
 
     public List<Student> GetAllStudents() => _students;
     // методы для работы с преподавателями
-    public void AddTeacher(string name, int age, string email, string department)
+    public void AddTeacher(string name, int age, string email, string Specialnost)
     {
-        var TeacherId = _Teachers.Count + 1;
-        var Teacher = new Teacher(TeacherId, name, age, email, department);
+        var TeacherId = _Teachers.Count + 10 + 1;
+        var Teacher = new Teacher(TeacherId, name, age, email, Specialnost);
         _Teachers.Add(Teacher);
     }
 
@@ -247,7 +246,7 @@ public class UniversityManager
         }
         return null;
     }
-    // Новые методы для выбора из списка (добавь в класс UniversityManager)
+    //методы для выбора из списка
     public void ShowAllCourses()
     {
         Console.WriteLine("\nДоступные курсы:");
@@ -262,7 +261,7 @@ public class UniversityManager
         Console.WriteLine("\nДоступные преподаватели:");
         foreach (var teacher in _Teachers)
         {
-            Console.WriteLine($"{teacher.PersonId}. {teacher.Name} - {teacher.Department}");
+            Console.WriteLine($"{teacher.PersonId}. {teacher.Name} - {teacher.Specialnost}");
         }
     }
 
@@ -275,8 +274,8 @@ public class UniversityManager
         }
     }
 
-    // Новые методы для связывания через выбор из списка
-    public void EnrollStudentInCourseWithSelection()
+    // методы для связывания через выбор из списка
+    public void RollOfStudentInCourseWithSelection()
     {
         ShowAllStudents();
         Console.Write("\nВыберите ID студента: ");
@@ -291,7 +290,7 @@ public class UniversityManager
 
                 if (student != null && course != null)
                 {
-                    student.EnrollInCourse(course);
+                    student.AddInCourse(course);
                     Console.WriteLine($"Студент {student.Name} записан на курс {course.CourseName}!");
                 }
                 else
@@ -301,8 +300,9 @@ public class UniversityManager
             }
         }
     }
+    //tryParse - переопределение типа данных
 
-    public void AssignTeacherToCourseWithSelection()
+    public void AddTeacherToCourseWithSelection()
     {
         ShowAllTeachers();
         Console.Write("\nВыберите ID преподавателя: ");
@@ -332,7 +332,7 @@ public class UniversityManager
     // методы для работы с курсами
     public void AddCourse(string courseName)
     {
-        var courseId = _courses.Count + 1;
+        var courseId = _courses.Count + 20 + 1;
         var course = new Course(courseId, courseName, "");
         _courses.Add(course);
     }
@@ -349,21 +349,20 @@ public class UniversityManager
 
     public List<Course> GetAllCourses() => _courses;
 
-    // методы для связывания сущностей
-    public bool EnrollStudentInCourse(int studentId, int courseId)
+    public bool RollOfStudentInCourse(int studentId, int courseId)
     {
         var student = GetStudentById(studentId);
         var course = GetCourseById(courseId);
 
         if (student != null && course != null)
         {
-            student.EnrollInCourse(course);
+            student.AddInCourse(course);
             return true;
         }
         return false;
     }
 
-    public bool AssignTeacherToCourse(int TeacherId, int courseId)
+    public bool AddTeacherToCourse(int TeacherId, int courseId)
     {
         var Teacher = GetTeacherById(TeacherId);
         var course = GetCourseById(courseId);
@@ -391,11 +390,11 @@ public class UniversityManager
 }
 public class UniversityConsoleMenu
 {
-    private UniversityManager _universityManager;
+    private UnievristyUpravlenie _universityUpravlenie;
 
     public UniversityConsoleMenu()
     {
-        _universityManager = new UniversityManager();
+        _universityUpravlenie = new UnievristyUpravlenie();
     }
 
     public void Run()
@@ -462,7 +461,7 @@ public class UniversityConsoleMenu
                     ViewStudentCourses();
                     break;
                 case "4":
-                    EnrollStudentInCourse();
+                    RollOfStudentInCourse();
                     break;
                 case "5":
                     return;
@@ -485,13 +484,13 @@ public class UniversityConsoleMenu
         Console.Write("введите специальность: ");
         var major = Console.ReadLine();
 
-        _universityManager.AddStudent(name, age, email, major);
+        _universityUpravlenie.AddStudent(name, age, email, major);
         Console.WriteLine("студент успешно добавлен!");
     }
 
     private void ViewAllStudents()
     {
-        var students = _universityManager.GetAllStudents();
+        var students = _universityUpravlenie.GetAllStudents();
         if (students.Count == 0)
         {
             Console.WriteLine("студенты не найдены.");
@@ -507,11 +506,11 @@ public class UniversityConsoleMenu
 
     private void ViewStudentCourses()
     {
-        _universityManager.ShowAllStudents();
+        _universityUpravlenie.ShowAllStudents();
         Console.Write("\nвыберите ID студента для просмотра курсов: ");
         if (int.TryParse(Console.ReadLine(), out int studentId))
         {
-            var info = _universityManager.GetStudentCoursesInfo(studentId);
+            var info = _universityUpravlenie.GetStudentCoursesInfo(studentId);
             Console.WriteLine($"\nкурсы студента:");
             Console.WriteLine(info);
         }
@@ -521,17 +520,17 @@ public class UniversityConsoleMenu
         }
     }
 
-    private void EnrollStudentInCourse()
+    private void RollOfStudentInCourse()
     {
-        _universityManager.ShowAllStudents();
+        _universityUpravlenie.ShowAllStudents();
         Console.Write("\nвыберите ID студента: ");
         if (int.TryParse(Console.ReadLine(), out int studentId))
         {
-            _universityManager.ShowAllCourses();
+            _universityUpravlenie.ShowAllCourses();
             Console.Write("выберите ID курса: ");
             if (int.TryParse(Console.ReadLine(), out int courseId))
             {
-                if (_universityManager.EnrollStudentInCourse(studentId, courseId))
+                if (_universityUpravlenie.RollOfStudentInCourse(studentId, courseId))
                     Console.WriteLine("студент успешно записан на курс");
                 else
                     Console.WriteLine("студент или курс не найден");
@@ -562,7 +561,7 @@ public class UniversityConsoleMenu
                     ViewAllTeachers();
                     break;
                 case "3":
-                    AssignTeacherToCourse();
+                    AddTeacherToCourse();
                     break;
                 case "4":
                     ViewTeacherCourses();
@@ -586,15 +585,15 @@ public class UniversityConsoleMenu
         Console.Write("введите email: ");
         var email = Console.ReadLine();
         Console.Write("введите кафедру: ");
-        var department = Console.ReadLine();
+        var Specialnost = Console.ReadLine();
 
-        _universityManager.AddTeacher(name, age, email, department);
+        _universityUpravlenie.AddTeacher(name, age, email, Specialnost);
         Console.WriteLine("преподаватель успешно добавлен!");
     }
 
     private void ViewAllTeachers()
     {
-        var teachers = _universityManager.GetAllTeachers();
+        var teachers = _universityUpravlenie.GetAllTeachers();
         if (teachers.Count == 0)
         {
             Console.WriteLine("преподаватели не найдены.");
@@ -608,17 +607,17 @@ public class UniversityConsoleMenu
         }
     }
 
-    private void AssignTeacherToCourse()
+    private void AddTeacherToCourse()
     {
-        _universityManager.ShowAllTeachers();
+        _universityUpravlenie.ShowAllTeachers();
         Console.Write("\nвыберите ID преподавателя: ");
         if (int.TryParse(Console.ReadLine(), out int teacherId))
         {
-            _universityManager.ShowAllCourses();
+            _universityUpravlenie.ShowAllCourses();
             Console.Write("выберите ID курса: ");
             if (int.TryParse(Console.ReadLine(), out int courseId))
             {
-                if (_universityManager.AssignTeacherToCourse(teacherId, courseId))
+                if (_universityUpravlenie.AddTeacherToCourse(teacherId, courseId))
                     Console.WriteLine("преподаватель успешно назначен на курс");
                 else
                     Console.WriteLine("преподаватель или курс не найден");
@@ -628,11 +627,11 @@ public class UniversityConsoleMenu
 
     private void ViewTeacherCourses()
     {
-        _universityManager.ShowAllTeachers();
+        _universityUpravlenie.ShowAllTeachers();
         Console.Write("\nвыберите ID преподавателя для просмотра курсов: ");
         if (int.TryParse(Console.ReadLine(), out int teacherId))
         {
-            var teacher = _universityManager.GetTeacherById(teacherId);
+            var teacher = _universityUpravlenie.GetTeacherById(teacherId);
             if (teacher != null)
             {
                 Console.WriteLine($"\nкурсы преподавателя {teacher.Name}:");
@@ -694,13 +693,13 @@ public class UniversityConsoleMenu
         Console.Write("введите название курса: ");
         var name = Console.ReadLine();
 
-        _universityManager.AddCourse(name);
+        _universityUpravlenie.AddCourse(name);
         Console.WriteLine("курс успешно добавлен!");
     }
 
     private void ViewAllCourses()
     {
-        var courses = _universityManager.GetAllCourses();
+        var courses = _universityUpravlenie.GetAllCourses();
         if (courses.Count == 0)
         {
             Console.WriteLine("курсы не найдены.");
@@ -712,18 +711,18 @@ public class UniversityConsoleMenu
         {
             Console.WriteLine($"ID: {course.CourseId}, курс: {course.CourseName}");
             Console.WriteLine($"преподаватель: {(course.Teacher != null ? course.Teacher.Name : "не назначен")}");
-            Console.WriteLine($"студентов: {course.EnrolledStudents.Count}");
+            Console.WriteLine($"студентов: {course.RollOfStudent.Count}");
             Console.WriteLine();
         }
     }
 
     private void ViewCourseStudents()
     {
-        _universityManager.ShowAllCourses();
+        _universityUpravlenie.ShowAllCourses();
         Console.Write("\nвыберите ID курса для просмотра студентов: ");
         if (int.TryParse(Console.ReadLine(), out int courseId))
         {
-            var info = _universityManager.GetCourseStudentsInfo(courseId);
+            var info = _universityUpravlenie.GetCourseStudentsInfo(courseId);
             Console.WriteLine($"\nстуденты на курсе:");
             Console.WriteLine(info);
         }
@@ -739,10 +738,10 @@ public class UniversityConsoleMenu
         Console.WriteLine("данные университета\n");
 
         Console.WriteLine("студенты:");
-        var students = _universityManager.GetAllStudents();
+        var students = _universityUpravlenie.GetAllStudents();
         if (students.Count == 0)
         {
-            Console.WriteLine("студенты не найдены.");
+            Console.WriteLine("студенты не найдены");
         }
         else
         {
@@ -753,7 +752,7 @@ public class UniversityConsoleMenu
         }
 
         Console.WriteLine("\nпреподаватели:");
-        var teachers = _universityManager.GetAllTeachers();
+        var teachers = _universityUpravlenie.GetAllTeachers();
         if (teachers.Count == 0)
         {
             Console.WriteLine("преподаватели не найдены");
@@ -767,7 +766,7 @@ public class UniversityConsoleMenu
         }
 
         Console.WriteLine("\nкурсы:");
-        var courses = _universityManager.GetAllCourses();
+        var courses = _universityUpravlenie.GetAllCourses();
         if (courses.Count == 0)
         {
             Console.WriteLine("курсы не найдены.");
@@ -778,7 +777,7 @@ public class UniversityConsoleMenu
             {
                 Console.WriteLine($"ID: {course.CourseId}, курс: {course.CourseName}");
                 Console.WriteLine($"преподаватель: {(course.Teacher != null ? course.Teacher.Name : "не назначен")}");
-                Console.WriteLine($"студентов: {course.EnrolledStudents.Count}");
+                Console.WriteLine($"студентов: {course.RollOfStudent.Count}");
                 Console.WriteLine();
             }
         }
@@ -800,3 +799,4 @@ public class Program
         menu.Run();
     }
 }
+//полиморфизм - это GetRole и GetInfo
