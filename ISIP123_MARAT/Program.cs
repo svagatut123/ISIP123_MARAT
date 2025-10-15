@@ -171,4 +171,87 @@ namespace Game
             }
         }
     }
+    public class VVG : Goblin
+    {
+        public VVG() : base()
+        {
+            Name = "ВВГ (Босс Гоблин)";
+            MaxHP = (int)(MaxHP * 2.0);
+            HP = MaxHP;
+            Attack = (int)(Attack * 1.5);
+            Defense = (int)(Defense * 1.2);
+        }
+
+        public override int CalculateDamage(Player player)
+        {
+            int baseDamage = Attack;
+            if (random.NextDouble() < 0.3) // +10% к базовому шансу
+            {
+                Console.WriteLine("ВВГ кританул");
+                baseDamage = (int)(baseDamage * 1.8);
+            }
+            return baseDamage;
+        }
+    }
+
+    public class Kovalsky : Skeleton
+    {
+        public Kovalsky() : base()
+        {
+            Name = "Ковальский (Босс Скелет)";
+            MaxHP = (int)(MaxHP * 2.5);
+            HP = MaxHP;
+            Attack = (int)(Attack * 1.3);
+            Defense = (int)(Defense * 1.4);
+        }
+    }
+
+    public class ArchimageCPP : Mage
+    {
+        public ArchimageCPP() : base()
+        {
+            Name = "Архимаг C++ (Босс Маг)";
+            MaxHP = (int)(MaxHP * 1.8);
+            HP = MaxHP;
+            Attack = (int)(Attack * 1.6);
+            Defense = (int)(Defense * 1.1);
+        }
+
+        public override void ApplyEffectDamage(Player player)
+        {
+            if (random.NextDouble() < 0.35) 
+            {
+                player.IsFrozen = true;
+                Console.WriteLine("Архимаг C++ накладывает заморозку");
+            }
+        }
+    }
+
+    public class PestovCmm : Skeleton
+    {
+        private double freezeChance = 0.4; 
+
+        public PestovCmm() : base()
+        {
+            Name = "Пестов С-- (Босс Скелет-Маг)";
+            MaxHP = (int)(MaxHP * 1.3);
+            HP = MaxHP;
+            Attack = (int)(Attack * 1.8);
+            Defense = (int)(Defense * 0.6);
+        }
+
+        public override int CalculateDamage(Player player)
+        {
+            return Attack; 
+        }
+
+        public override void ApplyEffectDamage(Player player)
+        {
+            if (random.NextDouble() < freezeChance)
+            {
+                player.IsFrozen = true;
+                Console.WriteLine("Пестов С-- накладывает заморозку");
+            }
+        }
+    }
 }
