@@ -274,8 +274,8 @@ namespace Game
             random = new Random();
 
             // Стартовое снаряжение
-            CurrentWeapon = new Weapon("меч", 5, 3);
-            CurrentArmor = new Armor("армор", 5, 2);
+            CurrentWeapon = new Weapon("меч", 5, 13);
+            CurrentArmor = new Armor("армор", 5, 12);
         }
 
         public void TakeDamage(int damage)
@@ -507,5 +507,93 @@ namespace Game
             Console.WriteLine($"Перед вами {boss.Name}!");
             StartCombat(boss);
         }
+
+        private void StartCombat(Enemy enemy)
+        {
+            Console.WriteLine($"\n=== Бой с {enemy.Name} ===");
+
+            while (enemy.IsAlive && player.HP > 0)
+            {
+                // Ход игрока
+                if (!player.Frozen)
+                {
+                    PlayerTurn(enemy);
+                }
+                else
+                {
+                    Console.WriteLine("Вы заморожены и пропускаете ход!");
+                    player.Frozen = false;
+                }
+
+                if (!enemy.IsAlive) break;
+
+                // Ход врага
+                EnemyTurn(enemy);
+            }
+
+            if (!enemy.IsAlive)
+            {
+                Console.WriteLine($"\nПобеда! Вы победили {enemy.Name}!");
+            }
+        }
+
+        private void PlayerTurn(Enemy enemy)
+        {
+            Console.WriteLine("\nВаш ход:");
+            Console.WriteLine("1 - Атаковать");
+            Console.WriteLine("2 - Защищаться");
+            Console.Write("Выберите действие: ");
+
+            string choice = Console.ReadLine();
+
+            switch (choice)
+            {
+                case "1":
+                    int damage = player.CalculateDamage();
+                    enemy.TakeDamage(damage);
+                    Console.WriteLine($"Вы нанесли {damage} урона {enemy.Name}!");
+                    Console.WriteLine($"{enemy.GetStatus()}");
+                    break;
+
+                case "2":
+                    player.TryDefend(); // Результат будет использован при атаке врага
+                    break;
+
+                default:
+                    Console.WriteLine("Неверный выбор, вы пропускаете ход!");
+                    break;
+            }
+        }
+
+        private void EnemyTurn(Enemy enemy)
+        {
+            Console.WriteLine($"\nХод {enemy.Name}:");
+
+            int damage = enemy.CalculateDamage(player);
+
+            // Проверка защиты игрока
+            if (!player.TryDefend())
+            {
+                int finalDamage = player.CalculateBlockedDamage(damage);
+                player.TakeDamage(finalDamage);
+                Console.WriteLine($"{enemy.Name} наносит {finalDamage} урона! (Исходный урон: {damage})");
+            }
+
+            // Применение спецэффектов
+            enemy.ApplyEffectDamage(player);
+
+            Console.WriteLine($"{player.GetStatus()}");
+        }
+    }
+
+    // Главная программа
+    class Program
+    {
+        static void Main(string[] args)
+        {
+            Game game = new Game();
+            game.Start();
+        }
     }
 }
+   
