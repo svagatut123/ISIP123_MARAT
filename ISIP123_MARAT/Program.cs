@@ -1,10 +1,9 @@
-﻿// пр6
-using System;
+﻿using System;
+using System.Collections.Generic;
 using System.Numerics;
 
 namespace Game
 {
-
     public enum EnemyType
     {
         Goblin,
@@ -12,7 +11,7 @@ namespace Game
         Mage,
         Boss
     }
-    //типы врагов
+
     public abstract class Item
     {
         public string Name { get; protected set; }
@@ -29,7 +28,7 @@ namespace Game
 
     public class Weapon : Item
     {
-        public int Attack { get; set; }
+        public int Attack { get; private set; }
 
         public Weapon(string name, int value, int attack) : base(name, value)
         {
@@ -43,41 +42,38 @@ namespace Game
 
         public override string ToString()
         {
-            return $"{Name} (атака: {Attack}, ценность: {Value})";
+            return $"{Name} (Атака: {Attack}, Ценность: {Value})";
         }
     }
 
     public class Armor : Item
     {
-        public int Defense {  get; set; }
+        public int Defense { get; private set; }
 
-        public Armor (string name, int value, int defense): base(name, value)
+        public Armor(string name, int value, int defense) : base(name, value)
         {
-            Defense = defense; 
+            Defense = defense;
         }
+
         public override void ApplyEffect(Player player)
         {
             player.EquipArmor(this);
         }
+
         public override string ToString()
         {
-            return $"{Name} (защита: {Defense}, ценность: {Value})";
+            return $"{Name} (Защита: {Defense}, Ценность: {Value})";
         }
-
     }
 
     public class HealthPotion : Item
     {
-        public int Heal { get; set; }
-        public HealthPotion(string name, int value, int heal) : base(name, value)
-        {
-            Heal = heal;
-        }
+        public HealthPotion(string name, int value) : base(name, value) { }
 
         public override void ApplyEffect(Player player)
         {
             player.Heal(player.MaxHP);
-            Console.WriteLine("hp восстановлено");
+            Console.WriteLine("Вы восстановили HP!");
         }
 
         public override string ToString()
@@ -93,24 +89,26 @@ namespace Game
         public int MaxHP { get; set; }
         public int Attack { get; set; }
         public int Defense { get; set; }
-        public bool Frozen { get; set; }
+        public bool IsFrozen { get; set; }
+
         protected Random random;
 
-        protected Enemy (string name, int hP, int maxHP, int Attack, int defense, bool frozen, Random random)
+        protected Enemy(string name, int hp, int attack, int defense)
         {
             Name = name;
-            HP = hP;
-            MaxHP = maxHP;
-            Attack = Attack;
+            MaxHP = hp;
+            HP = hp;
+            Attack = attack;
             Defense = defense;
-            Frozen = frozen;
             random = new Random();
         }
-        public virtual void Damagedealt (int  damage)
+
+        public virtual void TakeDamage(int damage)
         {
             HP = HP - damage;
-            if (HP < 0) HP = 0; 
+            if (HP < 0) HP = 0;
         }
+
         public abstract int CalculateDamage(Player player);
         public abstract void ApplyEffectDamage(Player player);
 
@@ -118,8 +116,27 @@ namespace Game
 
         public virtual string GetStatus()
         {
-            return $"{Name} - hp: {HP}/{MaxHP}, атака:{Attack}, защита: {Defense}";
+            return $"{Name} - HP: {HP}/{MaxHP}, Атака: {Attack}, Защита: {Defense}";
         }
     }
 
+    public class Goblin : Enemy
+    {
+        private double ChanceCrit = 0.2;
+
+        public Goblin() : base("Гоблин", 30, 8, 3) { }
+
+        public override int CalculateDamage(Player player)
+        {
+            int baseDamage = Attack;
+            if (random.NextDouble() < ChanceCrit)
+            {
+                Console.WriteLine("выпал крит");
+                baseDamage = (int)(baseDamage * 1.2);
+            }
+            return baseDamage;
+        }
+
+        public override void ApplyEffectDamage(Player player) { }
+    }
 }
