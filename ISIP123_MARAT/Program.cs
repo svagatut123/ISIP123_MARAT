@@ -329,7 +329,7 @@ namespace Game
 
         public string GetEquipment()
         {
-            return $"Оружие: {CurrentWeapon?.ToString() ?? "Нет"}\nДоспехи: {CurrentArmor?.ToString() ?? "Нет"}";
+            return $"Оружие: {CurrentWeapon?.ToString() ?? "Нет"}\nДоспехи: {CurrentArmor?.ToString() ?? "Нет "}";
         }
     }
 }
