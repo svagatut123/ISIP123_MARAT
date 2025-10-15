@@ -153,7 +153,7 @@ namespace Game
 
     public class Mage : Enemy
     {
-        private double freezeChance = 0.25; 
+        private double freezeChance = 0.25;
 
         public Mage() : base("Маг", 20, 12, 1) { }
 
@@ -219,7 +219,7 @@ namespace Game
 
         public override void ApplyEffectDamage(Player player)
         {
-            if (random.NextDouble() < 0.35) 
+            if (random.NextDouble() < 0.35)
             {
                 player.Frozen = true;
                 Console.WriteLine("Архимаг C++ накладывает заморозку");
@@ -229,7 +229,7 @@ namespace Game
 
     public class PestovCmm : Skeleton
     {
-        private double freezeChance = 0.4; 
+        private double freezeChance = 0.4;
 
         public PestovCmm() : base()
         {
@@ -242,7 +242,7 @@ namespace Game
 
         public override int CalculateDamage(Player player)
         {
-            return Attack; 
+            return Attack;
         }
 
         public override void ApplyEffectDamage(Player player)
@@ -309,7 +309,7 @@ namespace Game
         {
             if (random.NextDouble() < 0.4)
             {
-                Console.WriteLine("Вы полностью уклонились от атаки!");
+                Console.WriteLine("уклонились от атаки");
                 return true;
             }
             return false;
@@ -330,6 +330,182 @@ namespace Game
         public string GetEquipment()
         {
             return $"Оружие: {CurrentWeapon?.ToString() ?? "Нет"}\nДоспехи: {CurrentArmor?.ToString() ?? "Нет "}";
+        }
+    }
+    public class Game
+    {
+        private Player player;
+        private Random random;
+        private int turnCount;
+
+        // Списки предметов для генерации
+        private List<Weapon> weapons = new List<Weapon>
+        {
+            new Weapon("Деревянный меч", 10, 5),
+            new Weapon("Железный меч", 20, 8),
+            new Weapon("зачарованный лук", 25, 10),
+            new Weapon("аганим скипетр", 30, 12),
+            new Weapon("алмазный меч", 50, 15)
+        };
+
+        private List<Armor> armors = new List<Armor>
+        {
+            new Armor("Кожаная броня", 10, 3),
+            new Armor("Кольчуга", 20, 5),
+            new Armor("железная броня", 30, 8),
+            new Armor("алмазная броня", 25, 6),
+            new Armor("незеритовая броня", 50, 12)
+        };
+
+        public Game()
+        {
+            player = new Player(100);
+            random = new Random();
+            turnCount = 0;
+        }
+
+        public void Start()
+        {
+            
+            Console.WriteLine("начало игры\n");
+
+            while (player.HP > 0)
+            {
+                turnCount++;
+                Console.WriteLine($"\nХод {turnCount}");
+                Console.WriteLine(player.GetStatus());
+
+                if (player.Frozen)
+                {
+                    Console.WriteLine("Вы заморожены");
+                    player.Frozen = false;
+                    continue;
+                }
+
+                // Случайное событие: 50% сундук, 50% враг
+                if (random.Next(2) == 0)
+                {
+                    EncounterChest();
+                }
+                else
+                {
+                    EncounterEnemy();
+                }
+
+                // Каждые 10 ходов - босс
+                if (turnCount % 10 == 0)
+                {
+                    Console.WriteLine("\nвнимаени босс!");
+                    EncounterBoss();
+                }
+
+                if (player.HP > 0)
+                {
+                    Console.WriteLine("\nНажмите любую клавишу для продолжения");
+                    Console.ReadKey();
+                }
+            }
+
+            Console.WriteLine("\nигра окончена");
+        }
+
+        private void EncounterChest()
+        {
+            Console.WriteLine("сундук");
+
+            // Случайный предмет: 33% зелье, 33% оружие, 33% доспехи
+            int itemType = random.Next(3);
+            Item item = null;
+
+            switch (itemType)
+            {
+                case 0:
+                    item = new HealthPotion("зелье хп", 15);
+                    break;
+                case 1:
+                    item = weapons[random.Next(weapons.Count)];
+                    break;
+                case 2:
+                    item = armors[random.Next(armors.Count)];
+                    break;
+            }
+
+            Console.WriteLine($"В сундуке: {item}");
+
+            if (item is HealthPotion)
+            {
+                item.ApplyEffect(player);
+            }
+            else
+            {
+                Console.WriteLine("\nтекущая экипировка:");
+                Console.WriteLine(player.GetEquipment());
+                Console.WriteLine("\nвзять этот предмет? (д/н)");
+
+                string choice = Console.ReadLine().ToLower();
+                if (choice == "д" || choice == "y")
+                {
+                    item.ApplyEffect(player);
+                    Console.WriteLine("Предмет получен");
+                }
+                else
+                {
+                    Console.WriteLine("Вы выбросили предмет.");
+                }
+            }
+        }
+
+        private void EncounterEnemy()
+        {
+            Enemy enemy;
+            int enemyType = random.Next(3);
+
+            switch (enemyType)
+            {
+                case 0:
+                    enemy = new Goblin();
+                    break;
+                case 1:
+                    enemy = new Skeleton();
+                    break;
+                case 2:
+                    enemy = new Mage();
+                    break;
+                default:
+                    enemy = new Goblin();
+                    break;
+            }
+
+            Console.WriteLine($"Вы встретили {enemy.Name}!");
+            StartCombat(enemy);
+        }
+
+        private void EncounterBoss()
+        {
+            Enemy boss;
+            int bossType = random.Next(4);
+
+            switch (bossType)
+            {
+                case 0:
+                    boss = new VVG();
+                    break;
+                case 1:
+                    boss = new Kovalsky();
+                    break;
+                case 2:
+                    boss = new ArchimageCPP();
+                    break;
+                case 3:
+                    boss = new PestovCmm();
+                    break;
+                default:
+                    boss = new VVG();
+                    break;
+            }
+
+            Console.WriteLine($"Перед вами {boss.Name}!");
+            StartCombat(boss);
         }
     }
 }
