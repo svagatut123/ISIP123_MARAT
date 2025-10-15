@@ -85,4 +85,41 @@ namespace Game
             return $"{Name} (восстановление здоровья, Ценность: {Value})";
         }
     }
+
+    public abstract class Enemy
+    {
+        public string Name { get; set; }
+        public int HP { get; set; }
+        public int MaxHP { get; set; }
+        public int Attack { get; set; }
+        public int Defense { get; set; }
+        public bool Frozen { get; set; }
+        protected Random random;
+
+        protected Enemy (string name, int hP, int maxHP, int Attack, int defense, bool frozen, Random random)
+        {
+            Name = name;
+            HP = hP;
+            MaxHP = maxHP;
+            Attack = Attack;
+            Defense = defense;
+            Frozen = frozen;
+            random = new Random();
+        }
+        public virtual void Damagedealt (int  damage)
+        {
+            HP = HP - damage;
+            if (HP < 0) HP = 0; 
+        }
+        public abstract int CalculateDamage(Player player);
+        public abstract void ApplyEffectDamage(Player player);
+
+        public bool IsAlive => HP > 0;
+
+        public virtual string GetStatus()
+        {
+            return $"{Name} - hp: {HP}/{MaxHP}, атака:{Attack}, защита: {Defense}";
+        }
+    }
+
 }
