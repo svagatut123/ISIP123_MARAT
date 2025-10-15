@@ -89,7 +89,7 @@ namespace Game
         public int MaxHP { get; set; }
         public int Attack { get; set; }
         public int Defense { get; set; }
-        public bool IsFrozen { get; set; }
+        public bool Frozen { get; set; }
 
         protected Random random;
 
@@ -138,5 +138,37 @@ namespace Game
         }
 
         public override void ApplyEffectDamage(Player player) { }
+    }
+    public class Skeleton : Enemy
+    {
+        public Skeleton() : base("Скелет", 25, 10, 2) { }
+
+        public override int CalculateDamage(Player player)
+        {
+            return Attack; // игнорирует защиту игрока
+        }
+
+        public override void ApplyEffectDamage(Player player) { }
+    }
+
+    public class Mage : Enemy
+    {
+        private double freezeChance = 0.25; 
+
+        public Mage() : base("Маг", 20, 12, 1) { }
+
+        public override int CalculateDamage(Player player)
+        {
+            return Attack;
+        }
+
+        public override void ApplyEffectDamage(Player player)
+        {
+            if (random.NextDouble() < freezeChance)
+            {
+                player.Frozen = true;
+                Console.WriteLine("вы заморожены");
+            }
+        }
     }
 }
