@@ -185,3 +185,103 @@ namespace AutoServiceSimulator
         }
     }
 }
+
+
+//--Создание базы данных
+//CREATE DATABASE AutoServiceDB;
+//GO
+
+//USE AutoServiceDB;
+//GO
+
+//-- Таблица запчастей
+//CREATE TABLE SpareParts (
+//    Id INT PRIMARY KEY IDENTITY(1,1),
+//    Name NVARCHAR(100) NOT NULL,
+//    PurchasePrice DECIMAL(10,2) NOT NULL,
+//    SellPrice DECIMAL(10,2) NOT NULL,
+//    CreatedDate DATETIME2 DEFAULT GETDATE()
+//);
+
+//--Таблица клиентов
+//CREATE TABLE Clients (
+//    Id INT PRIMARY KEY IDENTITY(1,1),
+//    Name NVARCHAR(100) NOT NULL,
+//    CarModel NVARCHAR(100) NOT NULL,
+//    CreatedDate DATETIME2 DEFAULT GETDATE()
+//);
+
+//--Таблица заказов на ремонт
+//CREATE TABLE RepairOrders (
+//    Id INT PRIMARY KEY IDENTITY(1,1),
+//    ClientId INT NOT NULL,
+//    BrokenPartId INT NOT NULL,
+//    Status INT NOT NULL, -- 0=Pending, 1=InProgress, 2=Completed, 3=Failed, 4=Declined
+//    Profit DECIMAL(10,2) NOT NULL,
+//    CreatedDate DATETIME2 DEFAULT GETDATE(),
+//    FOREIGN KEY (ClientId) REFERENCES Clients(Id),
+//    FOREIGN KEY (BrokenPartId) REFERENCES SpareParts(Id)
+//);
+
+//--Таблица склада
+//CREATE TABLE Warehouse (
+//    Id INT PRIMARY KEY IDENTITY(1,1),
+//    SparePartId INT NOT NULL,
+//    Quantity INT NOT NULL,
+//    LastUpdated DATETIME2 DEFAULT GETDATE(),
+//    FOREIGN KEY (SparePartId) REFERENCES SpareParts(Id)
+//);
+
+//--Таблица заказов на поставку
+//CREATE TABLE SupplyOrders (
+//    Id INT PRIMARY KEY IDENTITY(1,1),
+//    TotalCost DECIMAL(10,2) NOT NULL,
+//    CarsUntilDelivery INT NOT NULL,
+//    CreatedDate DATETIME2 DEFAULT GETDATE()
+//);
+
+//--Таблица деталей в заказах на поставку
+//CREATE TABLE SupplyOrderItems (
+//    Id INT PRIMARY KEY IDENTITY(1,1),
+//    SupplyOrderId INT NOT NULL,
+//    SparePartId INT NOT NULL,
+//    Quantity INT NOT NULL,
+//    FOREIGN KEY (SupplyOrderId) REFERENCES SupplyOrders(Id),
+//    FOREIGN KEY (SparePartId) REFERENCES SpareParts(Id)
+//);
+
+//--Вставка начальных данных
+//INSERT INTO SpareParts (Name, PurchasePrice, SellPrice) VALUES
+//('Тормозные колодки', 2000.00, 3200.00),
+//('Масляный фильтр', 500.00, 750.00),
+//('Воздушный фильтр', 800.00, 1200.00),
+//('Свечи зажигания', 1200.00, 1860.00),
+//('Аккумулятор', 5000.00, 7000.00),
+//('Шины', 4000.00, 5400.00),
+//('Тормозные диски', 3500.00, 5075.00),
+//('Амортизаторы', 6000.00, 9000.00);
+
+//INSERT INTO Warehouse (SparePartId, Quantity) VALUES
+//(1, 2), (2, 3), (3, 2);
+
+//namespace AutoServiceSimulator
+//{
+//    /// <summary>
+//    /// Класс для работы с базой данных
+//    /// </summary>
+//    public class DatabaseService
+//    {
+//        private string _connectionString;
+
+//        public DatabaseService(string connectionString)
+//        {
+//            _connectionString = connectionString;
+//        }
+
+//        // Методы для работы с базой данных будут здесь
+//        // В реальном приложении нужно реализовать:
+//        // - Сохранение состояния игры
+//        // - Загрузка состояния игры
+//        // - Логирование всех операций
+//    }
+//}
