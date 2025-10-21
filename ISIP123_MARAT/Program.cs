@@ -42,143 +42,229 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Runtime.ConstrainedExecution;
+using System.Xml.Linq;
 
 namespace AutoServiceSimulator
 {
-    /// <summary>
-    /// Заказ на поставку запчастей
-    /// </summary>
-    public class SupplyOrder
+    public partial class AutoService
     {
-        private static int _nextId = 1;
-        public int Id { get; set; }
-        public Dictionary<SparePart, int> OrderedParts { get; set; }
-        public decimal TotalCost { get; set; }
-        public int CarsUntilDelivery { get; set; }
-
-        public SupplyOrder(Dictionary<SparePart, int> orderedParts, decimal totalCost)
+        /// <summary>
+        /// Принять заказ на ремонт
+        /// </summary>
+        public bool AcceptRepairOrder(RepairOrder order)
         {
-            if (orderedParts == null || orderedParts.Count == 0)
-                throw new ArgumentException("Заказ должен содержать детали");
-            if (totalCost <= 0)
-                throw new ArgumentException("Стоимость заказа должна быть положительной");
+            if (order.Status != RepairOrderStatus.Pending)
+                return false;
 
-            Id = _nextId++;
-            OrderedParts = orderedParts;
-            TotalCost = totalCost;
-            CarsUntilDelivery = 2;
-        }
+            order.Status = RepairOrderStatus.InProgress;
+            var brokenPart = order.Client.Car.BrokenPart;
 
-        public void DecrementDeliveryCounter()
-        {
-            if (CarsUntilDelivery > 0)
-                CarsUntilDelivery--;
-        }
+            if (Warehouse.IsPartAvailable(brokenPart))
+            {
+                // Есть нужная деталь - успешный ремонт
+                Warehouse.RemovePart(brokenPart);
+                order.CompleteSuccessfully();
+                UpdateBalance(order.Profit);
+                Console.WriteLine($"✅ Ремонт завершен успешно! Заработано: {order.Profit:C}");
+            }
+            else
+            {
+                // Нет нужной детали - ставим случайную (неудачный ремонт)
+                var wrongPart = Warehouse.GetRandomAvailablePart();
+                if (wrongPart != null)
+                {
+                    Warehouse.RemovePart(wrongPart);
+                    order.CompleteWithFailure(wrongPart);
+                    UpdateBalance(order.Profit);
+                    Console.WriteLine($"❌ КРИТИЧЕСКАЯ ОШИБКА! Установлена не та деталь.");
+                    Console.WriteLine($"Убыток: {order.Profit:C}");
+                }
+                else
+                {
+                    // Нет вообще никаких деталей - автоматический отказ
+                    order.Decline();
+                    UpdateBalance(order.Profit);
+                    Console.WriteLine($"⚠️ Нет деталей для ремонта. Заказ отклонен. Штраф: {-order.Profit:C}");
+                }
+            }
 
-        public bool IsReadyForDelivery()
-        {
-            return CarsUntilDelivery <= 0;
-        }
-
-        public override string ToString()
-        {
-            var parts = string.Join(", ", OrderedParts.Select(p => $"{p.Key.Name} x{p.Value}"));
-            return $"Заказ #{Id}: {parts} - доставка через {CarsUntilDelivery} машин";
-        }
-    }
-
-    /// <summary>
-    /// Главный класс, управляющий всей логикой игры
-    /// </summary>
-    public class AutoService
-    {
-        public string Name { get; set; }
-        public decimal Balance { get; private set; }
-        public Warehouse Warehouse { get; set; }
-        public List<RepairOrder> RepairOrders { get; set; }
-        public List<SupplyOrder> SupplyOrders { get; set; }
-        public List<SparePart> AvailablePartTypes { get; set; }
-        public int TotalCarsProcessed { get; set; }
-        private Random _random;
-
-        public AutoService(string name, decimal initialBalance)
-        {
-            if (string.IsNullOrWhiteSpace(name))
-                throw new ArgumentException("Название сервиса не может быть пустым");
-            if (initialBalance < 0)
-                throw new ArgumentException("Начальный баланс не может быть отрицательным");
-
-            Name = name;
-            Balance = initialBalance;
-            Warehouse = new Warehouse();
-            RepairOrders = new List<RepairOrder>();
-            SupplyOrders = new List<SupplyOrder>();
-            AvailablePartTypes = new List<SparePart>();
-            TotalCarsProcessed = 0;
-            _random = new Random();
+            RepairOrders.Add(order);
+            TotalCarsProcessed++;
+            ProcessDeliveries();
+            return true;
         }
 
         /// <summary>
-        /// Инициализация начальными данными
+        /// Отклонить заказ на ремонт
         /// </summary>
-        public void InitializeStartingParts()
+        public bool DeclineRepairOrder(RepairOrder order)
         {
-            // Создаем каталог доступных деталей
-            AvailablePartTypes.AddRange(new[]
-            {
-                new SparePart(1, "Тормозные колодки", 2000, 60),
-                new SparePart(2, "Масляный фильтр", 500, 50),
-                new SparePart(3, "Воздушный фильтр", 800, 50),
-                new SparePart(4, "Свечи зажигания", 1200, 55),
-                new SparePart(5, "Аккумулятор", 5000, 40),
-                new SparePart(6, "Шины", 4000, 35),
-                new SparePart(7, "Тормозные диски", 3500, 45),
-                new SparePart(8, "Амортизаторы", 6000, 50)
-            });
+            if (order.Status != RepairOrderStatus.Pending)
+                return false;
 
-            // Начальный склад
-            Warehouse.AddPart(AvailablePartTypes[0], 2); // Тормозные колодки
-            Warehouse.AddPart(AvailablePartTypes[1], 3); // Масляный фильтр
-            Warehouse.AddPart(AvailablePartTypes[2], 2); // Воздушный фильтр
+            order.Decline();
+            UpdateBalance(order.Profit);
+            RepairOrders.Add(order);
+            TotalCarsProcessed++;
+            Console.WriteLine($"⚠️ Заказ отклонен. Штраф: {-order.Profit:C}");
+
+            ProcessDeliveries();
+            return true;
         }
 
         /// <summary>
-        /// Обновление баланса с проверкой
+        /// Показать каталог доступных деталей
         /// </summary>
-        private void UpdateBalance(decimal amount)
+        public void ShowPartsCatalog()
         {
-            Balance += amount;
-            if (Balance < 0)
+            Console.WriteLine("\n=== КАТАЛОГ ДЕТАЛЕЙ ===");
+            for (int i = 0; i < AvailablePartTypes.Count; i++)
             {
-                Balance = 0; // Баланс не может быть отрицательным
+                var part = AvailablePartTypes[i];
+                Console.WriteLine($"{i + 1}. {part}");
             }
         }
 
         /// <summary>
-        /// Создание нового клиента со случайной поломкой
+        /// Покупка запчастей
         /// </summary>
-        public Client GenerateRandomClient()
+        public void PurchaseParts()
         {
-            var carModels = new[]
+            ShowPartsCatalog();
+            Console.WriteLine($"\nВаш баланс: {Balance:C}");
+
+            var orderedParts = new Dictionary<SparePart, int>();
+            decimal totalCost = 0;
+
+            while (true)
             {
-                "Toyota Camry", "Honda Civic", "BMW X5", "Mercedes C-Class",
-                "Ford Focus", "Hyundai Solaris", "Kia Rio", "Lada Vesta"
-            };
+                Console.Write("\nВведите номер детали для заказа (0 - завершить): ");
+                if (!int.TryParse(Console.ReadLine(), out int partIndex) || partIndex < 0 || partIndex > AvailablePartTypes.Count)
+                {
+                    Console.WriteLine("Неверный номер детали!");
+                    continue;
+                }
 
-            var randomModel = carModels[_random.Next(carModels.Length)];
-            var randomPart = AvailablePartTypes[_random.Next(AvailablePartTypes.Count)];
-            var car = new Car(randomModel, randomPart);
+                if (partIndex == 0)
+                    break;
 
-            var clientNames = new[]
+                var selectedPart = AvailablePartTypes[partIndex - 1];
+
+                Console.Write($"Введите количество (доступно средств: {(Balance - totalCost):C}): ");
+                if (!int.TryParse(Console.ReadLine(), out int quantity) || quantity <= 0)
+                {
+                    Console.WriteLine("Неверное количество!");
+                    continue;
+                }
+
+                var cost = selectedPart.PurchasePrice * quantity;
+                if (totalCost + cost > Balance)
+                {
+                    Console.WriteLine("Недостаточно средств!");
+                    continue;
+                }
+
+                if (orderedParts.ContainsKey(selectedPart))
+                {
+                    orderedParts[selectedPart] += quantity;
+                }
+                else
+                {
+                    orderedParts[selectedPart] = quantity;
+                }
+
+                totalCost += cost;
+                Console.WriteLine($"Добавлено: {selectedPart.Name} x{quantity} = {cost:C}");
+                Console.WriteLine($"Общая стоимость заказа: {totalCost:C}");
+            }
+
+            if (orderedParts.Count > 0)
             {
-                "Иван Петров", "Мария Сидорова", "Алексей Козлов", "Екатерина Новикова",
-                "Дмитрий Волков", "Ольга Орлова", "Сергей Морозов", "Анна Павлова"
-            };
+                var supplyOrder = new SupplyOrder(orderedParts, totalCost);
+                SupplyOrders.Add(supplyOrder);
+                UpdateBalance(-totalCost);
+                Console.WriteLine($"\n✅ Заказ #{supplyOrder.Id} создан! Доставка через 2 машины.");
+                Console.WriteLine($"Списано: {totalCost:C}, Баланс: {Balance:C}");
+            }
+            else
+            {
+                Console.WriteLine("Заказ не создан.");
+            }
+        }
 
-            var randomName = clientNames[_random.Next(clientNames.Length)];
+        /// <summary>
+        /// Обработка доставок заказов
+        /// </summary>
+        private void ProcessDeliveries()
+        {
+            foreach (var order in SupplyOrders.ToList())
+            {
+                order.DecrementDeliveryCounter();
 
-            return new Client(randomName, car);
+                if (order.IsReadyForDelivery())
+                {
+                    // Доставляем детали на склад
+                    foreach (var (part, quantity) in order.OrderedParts)
+                    {
+                        Warehouse.AddPart(part, quantity);
+                    }
+
+                    SupplyOrders.Remove(order);
+                    Console.WriteLine($"\n📦 Доставлен заказ #{order.Id}!");
+                    foreach (var (part, quantity) in order.OrderedParts)
+                    {
+                        Console.WriteLine($"   + {part.Name} x{quantity}");
+                    }
+                }
+            }
+        }
+
+        /// <summary>
+        /// Показать статус автосервиса
+        /// </summary>
+        public void ShowStatus()
+        {
+            Console.WriteLine($"\n=== {Name.ToUpper()} ===");
+            Console.WriteLine($"Баланс: {Balance:C}");
+            Console.WriteLine($"Обработано машин: {TotalCarsProcessed}");
+            Console.WriteLine($"Активных заказов на поставку: {SupplyOrders.Count}");
+
+            Warehouse.DisplayStock();
+
+            if (SupplyOrders.Count > 0)
+            {
+                Console.WriteLine("\n=== ЗАКАЗЫ НА ПОСТАВКУ ===");
+                foreach (var order in SupplyOrders)
+                {
+                    Console.WriteLine($"- {order}");
+                }
+            }
+        }
+
+        /// <summary>
+        /// Показать историю заказов
+        /// </summary>
+        public void ShowOrderHistory()
+        {
+            Console.WriteLine("\n=== ИСТОРИЯ ЗАКАЗОВ ===");
+            if (RepairOrders.Count == 0)
+            {
+                Console.WriteLine("Заказов пока нет");
+                return;
+            }
+
+            foreach (var order in RepairOrders.TakeLast(10)) // Последние 10 заказов
+            {
+                Console.WriteLine($"- {order}");
+            }
+
+            var totalProfit = RepairOrders.Sum(o => o.Profit);
+            var successfulOrders = RepairOrders.Count(o => o.Status == RepairOrderStatus.Completed);
+            var failedOrders = RepairOrders.Count(o => o.Status == RepairOrderStatus.Failed);
+
+            Console.WriteLine($"\nИтого: {RepairOrders.Count} заказов");
+            Console.WriteLine($"Успешных: {successfulOrders}, Неудачных: {failedOrders}");
+            Console.WriteLine($"Общая прибыль: {totalProfit:C}");
         }
     }
 }
