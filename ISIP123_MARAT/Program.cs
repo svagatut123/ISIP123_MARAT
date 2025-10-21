@@ -41,230 +41,147 @@
 //}
 using System;
 using System.Collections.Generic;
-using System.Linq;
-using System.Xml.Linq;
 
 namespace AutoServiceSimulator
 {
-    public partial class AutoService
+    /// <summary>
+    /// Управляет игровым процессом
+    /// </summary>
+    public class Game
     {
-        /// <summary>
-        /// Принять заказ на ремонт
-        /// </summary>
-        public bool AcceptRepairOrder(RepairOrder order)
+        private AutoService _autoService;
+        private bool _isRunning;
+
+        public Game(AutoService autoService)
         {
-            if (order.Status != RepairOrderStatus.Pending)
-                return false;
+            _autoService = autoService;
+            _isRunning = true;
+        }
 
-            order.Status = RepairOrderStatus.InProgress;
-            var brokenPart = order.Client.Car.BrokenPart;
+        public void Start()
+        {
+            Console.WriteLine($"Добро пожаловать в {_autoService.Name}!");
+            Console.WriteLine("Ваша задача - ремонтировать автомобили и зарабатывать деньги.");
+            Console.WriteLine("Будьте осторожны: неправильный ремонт приведет к убыткам!\n");
 
-            if (Warehouse.IsPartAvailable(brokenPart))
+            while (_isRunning && _autoService.Balance > 0)
             {
-                // Есть нужная деталь - успешный ремонт
-                Warehouse.RemovePart(brokenPart);
-                order.CompleteSuccessfully();
-                UpdateBalance(order.Profit);
-                Console.WriteLine($"✅ Ремонт завершен успешно! Заработано: {order.Profit:C}");
+                ProcessNextClient();
+
+                if (_autoService.Balance <= 0)
+                {
+                    Console.WriteLine("\n💸 ВЫ БАНКРОТ! Игра окончена.");
+                    break;
+                }
+
+                Console.WriteLine("\nНажмите любую клавишу для продолжения...");
+                Console.ReadKey();
+            }
+
+            ShowFinalStats();
+        }
+
+        private void ProcessNextClient()
+        {
+            Console.Clear();
+            _autoService.ShowStatus();
+
+            // Создаем нового клиента
+            var client = _autoService.GenerateRandomClient();
+            var order = new RepairOrder(client);
+
+            Console.WriteLine($"\n=== НОВЫЙ КЛИЕНТ ===");
+            Console.WriteLine($"Клиент: {client}");
+            Console.WriteLine($"Поломка: {client.Car.BrokenPart.Name}");
+            Console.WriteLine($"Стоимость ремонта: {order.CalculateRepairCost():C}");
+
+            // Проверяем наличие детали
+            var isPartAvailable = _autoService.Warehouse.IsPartAvailable(client.Car.BrokenPart);
+            Console.WriteLine($"Деталь на складе: {(isPartAvailable ? "✅ ЕСТЬ" : "❌ НЕТ")}");
+
+            ShowMenu(isPartAvailable);
+
+            var choice = GetUserChoice(1, 4);
+            ProcessMenuChoice(choice, order);
+        }
+
+        private void ShowMenu(bool isPartAvailable)
+        {
+            Console.WriteLine("\n=== ВАШИ ДЕЙСТВИЯ ===");
+            Console.WriteLine("1. Принять заказ и выполнить ремонт");
+
+            if (isPartAvailable)
+            {
+                Console.WriteLine("2. Отклонить заказ (штраф 100 руб)");
             }
             else
             {
-                // Нет нужной детали - ставим случайную (неудачный ремонт)
-                var wrongPart = Warehouse.GetRandomAvailablePart();
-                if (wrongPart != null)
-                {
-                    Warehouse.RemovePart(wrongPart);
-                    order.CompleteWithFailure(wrongPart);
-                    UpdateBalance(order.Profit);
-                    Console.WriteLine($"❌ КРИТИЧЕСКАЯ ОШИБКА! Установлена не та деталь.");
-                    Console.WriteLine($"Убыток: {order.Profit:C}");
-                }
-                else
-                {
-                    // Нет вообще никаких деталей - автоматический отказ
-                    order.Decline();
-                    UpdateBalance(order.Profit);
-                    Console.WriteLine($"⚠️ Нет деталей для ремонта. Заказ отклонен. Штраф: {-order.Profit:C}");
-                }
+                Console.WriteLine("2. Отклонить заказ (штраф 100 руб) - РЕКОМЕНДУЕТСЯ!");
             }
 
-            RepairOrders.Add(order);
-            TotalCarsProcessed++;
-            ProcessDeliveries();
-            return true;
+            Console.WriteLine("3. Заказать запчасти");
+            Console.WriteLine("4. Показать историю заказов");
         }
 
-        /// <summary>
-        /// Отклонить заказ на ремонт
-        /// </summary>
-        public bool DeclineRepairOrder(RepairOrder order)
+        private int GetUserChoice(int min, int max)
         {
-            if (order.Status != RepairOrderStatus.Pending)
-                return false;
-
-            order.Decline();
-            UpdateBalance(order.Profit);
-            RepairOrders.Add(order);
-            TotalCarsProcessed++;
-            Console.WriteLine($"⚠️ Заказ отклонен. Штраф: {-order.Profit:C}");
-
-            ProcessDeliveries();
-            return true;
-        }
-
-        /// <summary>
-        /// Показать каталог доступных деталей
-        /// </summary>
-        public void ShowPartsCatalog()
-        {
-            Console.WriteLine("\n=== КАТАЛОГ ДЕТАЛЕЙ ===");
-            for (int i = 0; i < AvailablePartTypes.Count; i++)
-            {
-                var part = AvailablePartTypes[i];
-                Console.WriteLine($"{i + 1}. {part}");
-            }
-        }
-
-        /// <summary>
-        /// Покупка запчастей
-        /// </summary>
-        public void PurchaseParts()
-        {
-            ShowPartsCatalog();
-            Console.WriteLine($"\nВаш баланс: {Balance:C}");
-
-            var orderedParts = new Dictionary<SparePart, int>();
-            decimal totalCost = 0;
-
             while (true)
             {
-                Console.Write("\nВведите номер детали для заказа (0 - завершить): ");
-                if (!int.TryParse(Console.ReadLine(), out int partIndex) || partIndex < 0 || partIndex > AvailablePartTypes.Count)
+                Console.Write($"\nВыберите действие ({min}-{max}): ");
+                if (int.TryParse(Console.ReadLine(), out int choice) && choice >= min && choice <= max)
                 {
-                    Console.WriteLine("Неверный номер детали!");
-                    continue;
+                    return choice;
                 }
+                Console.WriteLine("Неверный выбор! Попробуйте снова.");
+            }
+        }
 
-                if (partIndex == 0)
+        private void ProcessMenuChoice(int choice, RepairOrder order)
+        {
+            switch (choice)
+            {
+                case 1:
+                    _autoService.AcceptRepairOrder(order);
                     break;
 
-                var selectedPart = AvailablePartTypes[partIndex - 1];
+                case 2:
+                    _autoService.DeclineRepairOrder(order);
+                    break;
 
-                Console.Write($"Введите количество (доступно средств: {(Balance - totalCost):C}): ");
-                if (!int.TryParse(Console.ReadLine(), out int quantity) || quantity <= 0)
-                {
-                    Console.WriteLine("Неверное количество!");
-                    continue;
-                }
+                case 3:
+                    _autoService.PurchaseParts();
+                    break;
 
-                var cost = selectedPart.PurchasePrice * quantity;
-                if (totalCost + cost > Balance)
-                {
-                    Console.WriteLine("Недостаточно средств!");
-                    continue;
-                }
-
-                if (orderedParts.ContainsKey(selectedPart))
-                {
-                    orderedParts[selectedPart] += quantity;
-                }
-                else
-                {
-                    orderedParts[selectedPart] = quantity;
-                }
-
-                totalCost += cost;
-                Console.WriteLine($"Добавлено: {selectedPart.Name} x{quantity} = {cost:C}");
-                Console.WriteLine($"Общая стоимость заказа: {totalCost:C}");
-            }
-
-            if (orderedParts.Count > 0)
-            {
-                var supplyOrder = new SupplyOrder(orderedParts, totalCost);
-                SupplyOrders.Add(supplyOrder);
-                UpdateBalance(-totalCost);
-                Console.WriteLine($"\n✅ Заказ #{supplyOrder.Id} создан! Доставка через 2 машины.");
-                Console.WriteLine($"Списано: {totalCost:C}, Баланс: {Balance:C}");
-            }
-            else
-            {
-                Console.WriteLine("Заказ не создан.");
+                case 4:
+                    _autoService.ShowOrderHistory();
+                    Console.WriteLine("\nНажмите любую клавишу для продолжения...");
+                    Console.ReadKey();
+                    ProcessNextClient(); // Возвращаемся к тому же клиенту
+                    break;
             }
         }
 
-        /// <summary>
-        /// Обработка доставок заказов
-        /// </summary>
-        private void ProcessDeliveries()
+        private void ShowFinalStats()
         {
-            foreach (var order in SupplyOrders.ToList())
-            {
-                order.DecrementDeliveryCounter();
+            Console.WriteLine("\n=== ИТОГИ ИГРЫ ===");
+            Console.WriteLine($"Обработано машин: {_autoService.TotalCarsProcessed}");
 
-                if (order.IsReadyForDelivery())
-                {
-                    // Доставляем детали на склад
-                    foreach (var (part, quantity) in order.OrderedParts)
-                    {
-                        Warehouse.AddPart(part, quantity);
-                    }
-
-                    SupplyOrders.Remove(order);
-                    Console.WriteLine($"\n📦 Доставлен заказ #{order.Id}!");
-                    foreach (var (part, quantity) in order.OrderedParts)
-                    {
-                        Console.WriteLine($"   + {part.Name} x{quantity}");
-                    }
-                }
-            }
-        }
-
-        /// <summary>
-        /// Показать статус автосервиса
-        /// </summary>
-        public void ShowStatus()
-        {
-            Console.WriteLine($"\n=== {Name.ToUpper()} ===");
-            Console.WriteLine($"Баланс: {Balance:C}");
-            Console.WriteLine($"Обработано машин: {TotalCarsProcessed}");
-            Console.WriteLine($"Активных заказов на поставку: {SupplyOrders.Count}");
-
-            Warehouse.DisplayStock();
-
-            if (SupplyOrders.Count > 0)
-            {
-                Console.WriteLine("\n=== ЗАКАЗЫ НА ПОСТАВКУ ===");
-                foreach (var order in SupplyOrders)
-                {
-                    Console.WriteLine($"- {order}");
-                }
-            }
-        }
-
-        /// <summary>
-        /// Показать историю заказов
-        /// </summary>
-        public void ShowOrderHistory()
-        {
-            Console.WriteLine("\n=== ИСТОРИЯ ЗАКАЗОВ ===");
-            if (RepairOrders.Count == 0)
-            {
-                Console.WriteLine("Заказов пока нет");
-                return;
-            }
-
-            foreach (var order in RepairOrders.TakeLast(10)) // Последние 10 заказов
-            {
-                Console.WriteLine($"- {order}");
-            }
-
-            var totalProfit = RepairOrders.Sum(o => o.Profit);
-            var successfulOrders = RepairOrders.Count(o => o.Status == RepairOrderStatus.Completed);
-            var failedOrders = RepairOrders.Count(o => o.Status == RepairOrderStatus.Failed);
-
-            Console.WriteLine($"\nИтого: {RepairOrders.Count} заказов");
-            Console.WriteLine($"Успешных: {successfulOrders}, Неудачных: {failedOrders}");
+            var totalProfit = _autoService.RepairOrders.Sum(o => o.Profit);
             Console.WriteLine($"Общая прибыль: {totalProfit:C}");
+
+            var successfulOrders = _autoService.RepairOrders.Count(o => o.Status == RepairOrderStatus.Completed);
+            var failedOrders = _autoService.RepairOrders.Count(o => o.Status == RepairOrderStatus.Failed);
+            var declinedOrders = _autoService.RepairOrders.Count(o => o.Status == RepairOrderStatus.Declined);
+
+            Console.WriteLine($"Успешных ремонтов: {successfulOrders}");
+            Console.WriteLine($"Неудачных ремонтов: {failedOrders}");
+            Console.WriteLine($"Отклоненных заказов: {declinedOrders}");
+
+            if (successfulOrders > 0)
+            {
+                var averageProfit = totalProfit / _autoService.RepairOrders.Count;
+                Console.WriteLine($"Средняя прибыль на заказ: {averageProfit:C}");
+            }
         }
     }
 }
