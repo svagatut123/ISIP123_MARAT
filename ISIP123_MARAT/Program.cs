@@ -42,187 +42,143 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Runtime.ConstrainedExecution;
 
 namespace AutoServiceSimulator
 {
     /// <summary>
-    /// Управляет складом запчастей
+    /// Заказ на поставку запчастей
     /// </summary>
-    public class Warehouse
+    public class SupplyOrder
     {
-        public List<WarehouseItem> Items { get; set; }
+        private static int _nextId = 1;
+        public int Id { get; set; }
+        public Dictionary<SparePart, int> OrderedParts { get; set; }
+        public decimal TotalCost { get; set; }
+        public int CarsUntilDelivery { get; set; }
 
-        public Warehouse()
+        public SupplyOrder(Dictionary<SparePart, int> orderedParts, decimal totalCost)
         {
-            Items = new List<WarehouseItem>();
+            if (orderedParts == null || orderedParts.Count == 0)
+                throw new ArgumentException("Заказ должен содержать детали");
+            if (totalCost <= 0)
+                throw new ArgumentException("Стоимость заказа должна быть положительной");
+
+            Id = _nextId++;
+            OrderedParts = orderedParts;
+            TotalCost = totalCost;
+            CarsUntilDelivery = 2;
         }
 
-        public bool IsPartAvailable(SparePart part)
+        public void DecrementDeliveryCounter()
         {
-            var item = FindItem(part);
-            return item != null && item.Quantity > 0;
+            if (CarsUntilDelivery > 0)
+                CarsUntilDelivery--;
         }
 
-        public WarehouseItem FindItem(SparePart part)
+        public bool IsReadyForDelivery()
         {
-            return Items.FirstOrDefault(i => i.Part.Id == part.Id);
+            return CarsUntilDelivery <= 0;
         }
 
-        public void AddPart(SparePart part, int quantity)
+        public override string ToString()
         {
-            if (quantity <= 0)
-                throw new ArgumentException("Количество должно быть положительным");
-
-            var existingItem = FindItem(part);
-            if (existingItem != null)
-            {
-                existingItem.Quantity += quantity;
-            }
-            else
-            {
-                Items.Add(new WarehouseItem(part, quantity));
-            }
-        }
-
-        public bool RemovePart(SparePart part)
-        {
-            var item = FindItem(part);
-            if (item != null && item.Quantity > 0)
-            {
-                item.Quantity--;
-                return true;
-            }
-            return false;
-        }
-
-        public SparePart GetRandomAvailablePart()
-        {
-            var availableParts = Items.Where(i => i.Quantity > 0).ToList();
-            if (availableParts.Count == 0)
-                return null;
-
-            var random = new Random();
-            return availableParts[random.Next(availableParts.Count)].Part;
-        }
-
-        public void DisplayStock()
-        {
-            Console.WriteLine("\n=== СКЛАД ===");
-            if (Items.Count == 0 || Items.All(i => i.Quantity == 0))
-            {
-                Console.WriteLine("Склад пуст");
-                return;
-            }
-
-            foreach (var item in Items.Where(i => i.Quantity > 0))
-            {
-                Console.WriteLine($"- {item.Part.Name}: {item.Quantity} шт.");
-            }
+            var parts = string.Join(", ", OrderedParts.Select(p => $"{p.Key.Name} x{p.Value}"));
+            return $"Заказ #{Id}: {parts} - доставка через {CarsUntilDelivery} машин";
         }
     }
 
     /// <summary>
-    /// Представляет клиента и его автомобиль
+    /// Главный класс, управляющий всей логикой игры
     /// </summary>
-    public class Client
+    public class AutoService
     {
-        private static int _nextId = 1;
-        public int Id { get; set; }
         public string Name { get; set; }
-        public Car Car { get; set; }
+        public decimal Balance { get; private set; }
+        public Warehouse Warehouse { get; set; }
+        public List<RepairOrder> RepairOrders { get; set; }
+        public List<SupplyOrder> SupplyOrders { get; set; }
+        public List<SparePart> AvailablePartTypes { get; set; }
+        public int TotalCarsProcessed { get; set; }
+        private Random _random;
 
-        public Client(string name, Car car)
+        public AutoService(string name, decimal initialBalance)
         {
             if (string.IsNullOrWhiteSpace(name))
-                throw new ArgumentException("Имя клиента не может быть пустым");
+                throw new ArgumentException("Название сервиса не может быть пустым");
+            if (initialBalance < 0)
+                throw new ArgumentException("Начальный баланс не может быть отрицательным");
 
-            Id = _nextId++;
             Name = name;
-            Car = car ?? throw new ArgumentNullException(nameof(car));
+            Balance = initialBalance;
+            Warehouse = new Warehouse();
+            RepairOrders = new List<RepairOrder>();
+            SupplyOrders = new List<SupplyOrder>();
+            AvailablePartTypes = new List<SparePart>();
+            TotalCarsProcessed = 0;
+            _random = new Random();
         }
 
-        public override string ToString()
+        /// <summary>
+        /// Инициализация начальными данными
+        /// </summary>
+        public void InitializeStartingParts()
         {
-            return $"{Name} ({Car.Model})";
-        }
-    }
-
-    public class Car
-    {
-        public string Model { get; set; }
-        public SparePart BrokenPart { get; set; }
-
-        public Car(string model, SparePart brokenPart)
-        {
-            if (string.IsNullOrWhiteSpace(model))
-                throw new ArgumentException("Модель автомобиля не может быть пустой");
-
-            Model = model;
-            BrokenPart = brokenPart ?? throw new ArgumentNullException(nameof(brokenPart));
-        }
-
-        public override string ToString()
-        {
-            return $"{Model} (сломано: {BrokenPart.Name})";
-        }
-    }
-
-    /// <summary>
-    /// Заказ на ремонт
-    /// </summary>
-    public class RepairOrder
-    {
-        private static int _nextId = 1;
-        public int Id { get; set; }
-        public Client Client { get; set; }
-        public RepairOrderStatus Status { get; set; }
-        public decimal Profit { get; set; }
-
-        public RepairOrder(Client client)
-        {
-            Id = _nextId++;
-            Client = client ?? throw new ArgumentNullException(nameof(client));
-            Status = RepairOrderStatus.Pending;
-            Profit = 0;
-        }
-
-        public decimal CalculateRepairCost()
-        {
-            return Client.Car.BrokenPart.SellPrice;
-        }
-
-        public void CompleteSuccessfully()
-        {
-            Status = RepairOrderStatus.Completed;
-            Profit = CalculateRepairCost();
-        }
-
-        public void CompleteWithFailure(SparePart wrongPartUsed)
-        {
-            Status = RepairOrderStatus.Failed;
-            // Штраф: стоимость ремонта + компенсация + стоимость неправильно использованной детали
-            Profit = -CalculateRepairCost() * 2 - wrongPartUsed.PurchasePrice;
-        }
-
-        public void Decline()
-        {
-            Status = RepairOrderStatus.Declined;
-            Profit = -100; // Штраф за отказ
-        }
-
-        public override string ToString()
-        {
-            var statusText = Status switch
+            // Создаем каталог доступных деталей
+            AvailablePartTypes.AddRange(new[]
             {
-                RepairOrderStatus.Pending => "Ожидает",
-                RepairOrderStatus.InProgress => "В работе",
-                RepairOrderStatus.Completed => "Завершен",
-                RepairOrderStatus.Failed => "Провален",
-                RepairOrderStatus.Declined => "Отклонен",
-                _ => "Неизвестен"
+                new SparePart(1, "Тормозные колодки", 2000, 60),
+                new SparePart(2, "Масляный фильтр", 500, 50),
+                new SparePart(3, "Воздушный фильтр", 800, 50),
+                new SparePart(4, "Свечи зажигания", 1200, 55),
+                new SparePart(5, "Аккумулятор", 5000, 40),
+                new SparePart(6, "Шины", 4000, 35),
+                new SparePart(7, "Тормозные диски", 3500, 45),
+                new SparePart(8, "Амортизаторы", 6000, 50)
+            });
+
+            // Начальный склад
+            Warehouse.AddPart(AvailablePartTypes[0], 2); // Тормозные колодки
+            Warehouse.AddPart(AvailablePartTypes[1], 3); // Масляный фильтр
+            Warehouse.AddPart(AvailablePartTypes[2], 2); // Воздушный фильтр
+        }
+
+        /// <summary>
+        /// Обновление баланса с проверкой
+        /// </summary>
+        private void UpdateBalance(decimal amount)
+        {
+            Balance += amount;
+            if (Balance < 0)
+            {
+                Balance = 0; // Баланс не может быть отрицательным
+            }
+        }
+
+        /// <summary>
+        /// Создание нового клиента со случайной поломкой
+        /// </summary>
+        public Client GenerateRandomClient()
+        {
+            var carModels = new[]
+            {
+                "Toyota Camry", "Honda Civic", "BMW X5", "Mercedes C-Class",
+                "Ford Focus", "Hyundai Solaris", "Kia Rio", "Lada Vesta"
             };
 
-            return $"Заказ #{Id}: {Client} - {statusText} ({Profit:C})";
+            var randomModel = carModels[_random.Next(carModels.Length)];
+            var randomPart = AvailablePartTypes[_random.Next(AvailablePartTypes.Count)];
+            var car = new Car(randomModel, randomPart);
+
+            var clientNames = new[]
+            {
+                "Иван Петров", "Мария Сидорова", "Алексей Козлов", "Екатерина Новикова",
+                "Дмитрий Волков", "Ольга Орлова", "Сергей Морозов", "Анна Павлова"
+            };
+
+            var randomName = clientNames[_random.Next(clientNames.Length)];
+
+            return new Client(randomName, car);
         }
     }
 }
