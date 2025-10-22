@@ -39,715 +39,878 @@
 //    public void AddPart(SparePart part, int quantity) { } // ПОВТОРЯЕТСЯ: добавление
 //    public bool RemovePart(SparePart part) { }       // ПОВТОРЯЕТСЯ: удаление
 //}
-using System;
-using System.Collections.Generic;
-using System.Linq;
+using System; 
+using System.Collections.Generic; 
+using System.Data.SqlClient; 
+using System.Linq; 
 
-namespace AutoServiceSimulator
+namespace AutoServiceSimulator {
+    class Program 
+    {
+        static void Main(string[] args) 
+        {
+            Console.WriteLine("=== АВТОСЕРВИС ==="); 
+
+            string connectionString = @"Server=localhost;Database=AutoServiceDB;Trusted_Connection=true;"; 
+
+            try //обработка исключений
+            {
+                Game game = new Game(connectionString); 
+                game.Start(); 
+            }
+            catch (Exception ex) // Обработка всех исключений
+            {
+                Console.WriteLine($"Ошибка: {ex.Message}"); 
+                Console.WriteLine("Проверьте подключение к базе данных SQL Server"); 
+                Console.ReadLine(); 
+            }
+        }
+    }
+
+    public enum RepairOrderStatus //перечесление статуса заказа
+    {
+        Pending = 0, // ожидает обработки
+        InProgress = 1, // принят в работу
+        Completed = 2, // успешно завершен
+        Failed = 3, // завершен с ошибкой
+        Declined = 4 //отклонен
+    }
+
+    public class SparePart // запчасти
+    {
+        public int Id { get; set; }
+        public string Name { get; set; } 
+        public decimal PurchasePrice { get; set; } // Цена покупки 
+        public decimal SellPrice { get; set; } // Цена продажи/ремонта 
+
+        public SparePart(int id, string name, decimal purchasePrice, decimal sellPrice) 
+        {
+            Id = id; 
+            Name = name;
+            PurchasePrice = purchasePrice; 
+            SellPrice = sellPrice; 
+        }
+
+        public override string ToString() // Переопределение метода для строкового представления
+        {
+            return string.Format("{0} (Покупка: {1:C}, Ремонт: {2:C})", Name, PurchasePrice, SellPrice); // Форматированная строка с информацией о запчасти
+        }
+    }
+
+    public class RepairOrder //заказ на ремонт
+    {
+        public int Id { get; set; } 
+        public string ClientName { get; set; } 
+        public string CarModel { get; set; } 
+        public string BrokenPartName { get; set; }
+        public decimal RepairCost { get; set; } 
+        public RepairOrderStatus Status { get; set; } 
+        public decimal Profit { get; set; } 
+        public DateTime CreatedDate { get; set; } 
+
+        public override string ToString() 
+        {
+            string statusText; 
+            switch (Status) 
+            {
+                case RepairOrderStatus.Pending:
+                    statusText = "Ожидает"; 
+                    break;
+                case RepairOrderStatus.InProgress:
+                    statusText = "В работе"; 
+                    break;
+                case RepairOrderStatus.Completed:
+                    statusText = "Завершен"; 
+                    break;
+                case RepairOrderStatus.Failed:
+                    statusText = "Провален"; 
+                    break;
+                case RepairOrderStatus.Declined:
+                    statusText = "Отклонен"; 
+                    break;
+                default:
+                    statusText = "Неизвестен"; 
+                    break;
+            }
+
+            return string.Format("Заказ #{0}: {1} ({2}) - {3} - {4} ({5:C})", 
+                Id, ClientName, CarModel, BrokenPartName, statusText, Profit);
+        }
+    }
+
+public class SupplyOrder
 {
-    public class Program
+    public int Id { get; set; }
+    public decimal TotalCost { get; set; }
+    public int CarsUntilDelivery { get; set; }
+
+    public void DecrementDeliveryCounter()
     {
-        public static void Main(string[] args)
-        {
-            Console.WriteLine("=== АВТОСЕРВИС ===");
-
-            // Создаем автосервис с начальным балансом
-            var autoService = new AutoService("Мой Автосервис", 10000m);
-            autoService.InitializeStartingParts();
-
-            // Запускаем игровой цикл
-            var game = new Game(autoService);
-            game.Start();
-        }
+        if (CarsUntilDelivery > 0)
+            CarsUntilDelivery--; // Уменьшение счетчика на 1
     }
 
-    public enum RepairOrderStatus
+    public bool IsReadyForDelivery()
     {
-        Pending,    // Заказ создан, ожидает решения
-        InProgress, // Принят в работу
-        Completed,  // Успешно завершен
-        Failed,     // Завершен неудачно (поставили не ту деталь)
-        Declined    // Отклонен
+        return CarsUntilDelivery <= 0; // Возвращает тру, если доставка готова
     }
 
-    public class SparePart
+    public override string ToString()
     {
-        public int Id { get; set; }
-        public string Name { get; set; }
-        public decimal PurchasePrice { get; set; }
-        public decimal SellPrice { get; set; }
-
-        public SparePart(int id, string name, decimal purchasePrice, decimal marginPercent = 50)
-        {
-            if (string.IsNullOrWhiteSpace(name))
-                throw new ArgumentException("Название детали не может быть пустым");
-            if (purchasePrice <= 0)
-                throw new ArgumentException("Цена покупки должна быть положительной");
-            if (marginPercent < 0)
-                throw new ArgumentException("Наценка не может быть отрицательной");
-
-            Id = id;
-            Name = name;
-            PurchasePrice = purchasePrice;
-            SellPrice = purchasePrice * (1 + marginPercent / 100);
-        }
-
-        public override string ToString()
-        {
-            return $"{Name} (Покупка: {PurchasePrice:C}, Ремонт: {SellPrice:C})";
-        }
+        return string.Format("Заказ #{0}: доставка через {1} машин", Id, CarsUntilDelivery);
     }
-
-    public class WarehouseItem
+}
+    public class DatabaseService 
     {
-        public SparePart Part { get; set; }
-        public int Quantity { get; set; }
+        private string _connectionString; 
 
-        public WarehouseItem(SparePart part, int quantity)
+        public DatabaseService(string connectionString) 
         {
-            Part = part ?? throw new ArgumentNullException(nameof(part));
-            if (quantity < 0)
-                throw new ArgumentException("Количество не может быть отрицательным");
-
-            Part = part;
-            Quantity = quantity;
+            _connectionString = connectionString; 
         }
 
-        public override string ToString()
+        public Tuple<decimal, int, string> GetGameState()
         {
-            return $"{Part.Name}: {Quantity} шт.";
-        }
-    }
-
-    public class Warehouse
-    {
-        public List<WarehouseItem> Items { get; set; }
-
-        public Warehouse()
-        {
-            Items = new List<WarehouseItem>();
-        }
-
-        public bool IsPartAvailable(SparePart part)
-        {
-            var item = FindItem(part);
-            return item != null && item.Quantity > 0;
-        }
-
-        public WarehouseItem FindItem(SparePart part)
-        {
-            return Items.FirstOrDefault(i => i.Part.Id == part.Id);
-        }
-
-        public void AddPart(SparePart part, int quantity)
-        {
-            if (quantity <= 0)
-                throw new ArgumentException("Количество должно быть положительным");
-
-            var existingItem = FindItem(part);
-            if (existingItem != null)
+            using (SqlConnection connection = new SqlConnection(_connectionString)) // Создание подключения к БД
             {
-                existingItem.Quantity += quantity;
+                connection.Open(); 
+
+                SqlCommand command = new SqlCommand( // Создание SQL команды
+                    "SELECT Balance, TotalCarsProcessed, ServiceName FROM GameState WHERE Id = 1", // SQL запрос
+                    connection);
+
+                using (SqlDataReader reader = command.ExecuteReader()) 
+                {
+                    if (reader.Read()) // Чтение первой строки результата
+                    {
+                        return new Tuple<decimal, int, string>( // Возврат строки с данными
+                            reader.GetDecimal(0),
+                            reader.GetInt32(1), 
+                            reader.GetString(2) 
+                        );
+                    }
+                }
             }
-            else
+
+            return new Tuple<decimal, int, string>(10000m, 0, "Мой Автосервис"); // Возврат значений по умолчанию
+        }
+
+        public void UpdateGameState(decimal balance, int totalCars)
+        {
+            using (SqlConnection connection = new SqlConnection(_connectionString)) 
             {
-                Items.Add(new WarehouseItem(part, quantity));
+                connection.Open();
+
+                SqlCommand command = new SqlCommand( 
+                    "UPDATE GameState SET Balance = @Balance, TotalCarsProcessed = @TotalCars, LastUpdated = GETDATE() WHERE Id = 1", 
+                    connection);
+                command.Parameters.AddWithValue("@Balance", balance); 
+                command.Parameters.AddWithValue("@TotalCars", totalCars); 
+
+                command.ExecuteNonQuery(); 
             }
         }
 
-        public bool RemovePart(SparePart part)
+        
+        public List<SparePart> GetAllSpareParts()
         {
-            var item = FindItem(part);
-            if (item != null && item.Quantity > 0)
+            List<SparePart> parts = new List<SparePart>(); 
+
+            using (SqlConnection connection = new SqlConnection(_connectionString)) 
             {
-                item.Quantity--;
-                return true;
-            }
-            return false;
-        }
+                connection.Open(); 
 
-        public SparePart GetRandomAvailablePart()
-        {
-            var availableParts = Items.Where(i => i.Quantity > 0).ToList();
-            if (availableParts.Count == 0)
-                return null;
+                SqlCommand command = new SqlCommand("SELECT Id, Name, PurchasePrice, SellPrice FROM SpareParts", connection); 
 
-            var random = new Random();
-            return availableParts[random.Next(availableParts.Count)].Part;
-        }
-
-        public void DisplayStock()
-        {
-            Console.WriteLine("\n=== СКЛАД ===");
-            if (Items.Count == 0 || Items.All(i => i.Quantity == 0))
-            {
-                Console.WriteLine("Склад пуст");
-                return;
+                using (SqlDataReader reader = command.ExecuteReader()) 
+                {
+                    while (reader.Read()) 
+                    {
+                        parts.Add(new SparePart( 
+                            reader.GetInt32(0), 
+                            reader.GetString(1), 
+                            reader.GetDecimal(2), 
+                            reader.GetDecimal(3) 
+                        ));
+                    }
+                }
             }
 
-            foreach (var item in Items.Where(i => i.Quantity > 0))
+            return parts; 
+        }
+
+        
+        public Dictionary<int, int> GetWarehouseStock()
+        {
+            Dictionary<int, int> stock = new Dictionary<int, int>(); // Создание словаря для хранения запасов
+
+            using (SqlConnection connection = new SqlConnection(_connectionString)) 
             {
-                Console.WriteLine($"- {item.Part.Name}: {item.Quantity} шт.");
+                connection.Open(); 
+
+                SqlCommand command = new SqlCommand( 
+                    "SELECT w.SparePartId, w.Quantity " + 
+                    "FROM Warehouse w " + 
+                    "INNER JOIN SpareParts s ON w.SparePartId = s.Id " + 
+                    "WHERE w.Quantity > 0", 
+                    connection);
+
+                using (SqlDataReader reader = command.ExecuteReader()) 
+                {
+                    while (reader.Read()) // Чтение всех строк результата
+                    {
+                        stock[reader.GetInt32(0)] = reader.GetInt32(1); // Добавление в словарь
+                    }
+                }
+            }
+
+            return stock; 
+        }
+
+        public void UpdateWarehouseQuantity(int sparePartId, int quantity)
+        {
+            using (SqlConnection connection = new SqlConnection(_connectionString)) 
+            {
+                connection.Open(); 
+
+                SqlCommand command = new SqlCommand( 
+                    "UPDATE Warehouse SET Quantity = @Quantity, LastUpdated = GETDATE() WHERE SparePartId = @SparePartId", 
+                    connection);
+                command.Parameters.AddWithValue("@SparePartId", sparePartId); 
+                command.Parameters.AddWithValue("@Quantity", quantity); 
+
+                command.ExecuteNonQuery(); 
             }
         }
-    }
 
-    public class Client
-    {
-        private static int _nextId = 1;
-        public int Id { get; set; }
-        public string Name { get; set; }
-        public Car Car { get; set; }
-
-        public Client(string name, Car car)
+        public int CreateClient(string name, string carModel)
         {
-            if (string.IsNullOrWhiteSpace(name))
-                throw new ArgumentException("Имя клиента не может быть пустым");
-
-            Id = _nextId++;
-            Name = name;
-            Car = car ?? throw new ArgumentNullException(nameof(car));
-        }
-
-        public override string ToString()
-        {
-            return $"{Name} ({Car.Model})";
-        }
-    }
-
-    public class Car
-    {
-        public string Model { get; set; }
-        public SparePart BrokenPart { get; set; }
-
-        public Car(string model, SparePart brokenPart)
-        {
-            if (string.IsNullOrWhiteSpace(model))
-                throw new ArgumentException("Модель автомобиля не может быть пустой");
-
-            Model = model;
-            BrokenPart = brokenPart ?? throw new ArgumentNullException(nameof(brokenPart));
-        }
-
-        public override string ToString()
-        {
-            return $"{Model} (сломано: {BrokenPart.Name})";
-        }
-    }
-
-    public class RepairOrder
-    {
-        private static int _nextId = 1;
-        public int Id { get; set; }
-        public Client Client { get; set; }
-        public RepairOrderStatus Status { get; set; }
-        public decimal Profit { get; set; }
-
-        public RepairOrder(Client client)
-        {
-            Id = _nextId++;
-            Client = client ?? throw new ArgumentNullException(nameof(client));
-            Status = RepairOrderStatus.Pending;
-            Profit = 0;
-        }
-
-        public decimal CalculateRepairCost()
-        {
-            return Client.Car.BrokenPart.SellPrice;
-        }
-
-        public void CompleteSuccessfully()
-        {
-            Status = RepairOrderStatus.Completed;
-            Profit = CalculateRepairCost();
-        }
-
-        public void CompleteWithFailure(SparePart wrongPartUsed)
-        {
-            Status = RepairOrderStatus.Failed;
-            // Штраф: стоимость ремонта + компенсация + стоимость неправильно использованной детали
-            Profit = -CalculateRepairCost() * 2 - wrongPartUsed.PurchasePrice;
-        }
-
-        public void Decline()
-        {
-            Status = RepairOrderStatus.Declined;
-            Profit = -100; // Штраф за отказ
-        }
-
-        public override string ToString()
-        {
-            var statusText = Status switch
+            using (SqlConnection connection = new SqlConnection(_connectionString)) 
             {
-                RepairOrderStatus.Pending => "Ожидает",
-                RepairOrderStatus.InProgress => "В работе",
-                RepairOrderStatus.Completed => "Завершен",
-                RepairOrderStatus.Failed => "Провален",
-                RepairOrderStatus.Declined => "Отклонен",
-                _ => "Неизвестен"
-            };
+                connection.Open(); 
 
-            return $"Заказ #{Id}: {Client} - {statusText} ({Profit:C})";
+                SqlCommand command = new SqlCommand( 
+                    "INSERT INTO Clients (Name, CarModel) OUTPUT INSERTED.Id VALUES (@Name, @CarModel)", 
+                    connection);
+                command.Parameters.AddWithValue("@Name", name);
+                command.Parameters.AddWithValue("@CarModel", carModel);
+
+                return (int)command.ExecuteScalar();
+            }
+        }
+
+        public int CreateRepairOrder(int clientId, int brokenPartId, int status, decimal profit)
+        {
+            using (SqlConnection connection = new SqlConnection(_connectionString)) 
+            {
+                connection.Open(); 
+
+                SqlCommand command = new SqlCommand( 
+                    "INSERT INTO RepairOrders (ClientId, BrokenPartId, Status, Profit) OUTPUT INSERTED.Id VALUES (@ClientId, @BrokenPartId, @Status, @Profit)", // SQL запрос
+                    connection);
+                command.Parameters.AddWithValue("@ClientId", clientId);
+                command.Parameters.AddWithValue("@BrokenPartId", brokenPartId); 
+                command.Parameters.AddWithValue("@Status", status); 
+                command.Parameters.AddWithValue("@Profit", profit);
+
+                return (int)command.ExecuteScalar(); 
+            }
+        }
+
+        public List<RepairOrder> GetRecentRepairOrders(int count = 10)
+        {
+            List<RepairOrder> orders = new List<RepairOrder>(); 
+
+            using (SqlConnection connection = new SqlConnection(_connectionString)) 
+            {
+                connection.Open();
+
+                SqlCommand command = new SqlCommand( 
+                    "SELECT TOP (@Count) ro.Id, c.Name, c.CarModel, sp.Name, sp.SellPrice, ro.Status, ro.Profit, ro.CreatedDate " + // Выбор полей
+                    "FROM RepairOrders ro " + 
+                    "INNER JOIN Clients c ON ro.ClientId = c.Id " +
+                    "INNER JOIN SpareParts sp ON ro.BrokenPartId = sp.Id " + 
+                    "ORDER BY ro.CreatedDate DESC", 
+                    connection);
+                command.Parameters.AddWithValue("@Count", count); 
+
+                using (SqlDataReader reader = command.ExecuteReader()) 
+                {
+                    while (reader.Read()) 
+                    {
+                        RepairOrder order = new RepairOrder 
+                        {
+                            Id = reader.GetInt32(0), 
+                            ClientName = reader.GetString(1), 
+                            CarModel = reader.GetString(2), 
+                            BrokenPartName = reader.GetString(3), 
+                            RepairCost = reader.GetDecimal(4), 
+                            Status = (RepairOrderStatus)reader.GetInt32(5), 
+                            Profit = reader.GetDecimal(6), 
+                            CreatedDate = reader.GetDateTime(7) 
+                        };
+                        orders.Add(order); 
+                    }
+                }
+            }
+
+            return orders; 
+        }
+
+        public int CreateSupplyOrder(decimal totalCost)
+        {
+            using (SqlConnection connection = new SqlConnection(_connectionString)) 
+            {
+                connection.Open(); 
+
+                SqlCommand command = new SqlCommand(
+                    "INSERT INTO SupplyOrders (TotalCost, CarsUntilDelivery) OUTPUT INSERTED.Id VALUES (@TotalCost, 2)", 
+                    connection);
+                command.Parameters.AddWithValue("@TotalCost", totalCost);
+
+                return (int)command.ExecuteScalar(); 
+            }
+        }
+
+        public void AddSupplyOrderItem(int supplyOrderId, int sparePartId, int quantity)
+        {
+            using (SqlConnection connection = new SqlConnection(_connectionString)) 
+            {
+                connection.Open(); 
+
+                SqlCommand command = new SqlCommand( 
+                    "INSERT INTO SupplyOrderItems (SupplyOrderId, SparePartId, Quantity) VALUES (@SupplyOrderId, @SparePartId, @Quantity)",
+                    connection);
+                command.Parameters.AddWithValue("@SupplyOrderId", supplyOrderId); 
+                command.Parameters.AddWithValue("@SparePartId", sparePartId); 
+                command.Parameters.AddWithValue("@Quantity", quantity); 
+
+                command.ExecuteNonQuery(); 
+            }
+        }
+
+        public List<SupplyOrder> GetPendingSupplyOrders()
+        {
+            List<SupplyOrder> orders = new List<SupplyOrder>(); 
+
+            using (SqlConnection connection = new SqlConnection(_connectionString)) 
+            {
+                connection.Open(); 
+
+                SqlCommand command = new SqlCommand( 
+                    "SELECT Id, TotalCost, CarsUntilDelivery FROM SupplyOrders WHERE IsDelivered = 0", 
+                    connection);
+
+                using (SqlDataReader reader = command.ExecuteReader()) 
+                {
+                    while (reader.Read())
+                    {
+                        SupplyOrder order = new SupplyOrder 
+                        {
+                            Id = reader.GetInt32(0), 
+                            TotalCost = reader.GetDecimal(1), 
+                            CarsUntilDelivery = reader.GetInt32(2) 
+                        };
+                        orders.Add(order); 
+                    }
+                }
+            }
+
+            return orders; 
+        }
+
+        
+        public void UpdateSupplyOrderDelivery(int supplyOrderId, int carsUntilDelivery)
+        {
+            using (SqlConnection connection = new SqlConnection(_connectionString)) 
+            {
+                connection.Open(); 
+
+                SqlCommand command = new SqlCommand( 
+                    "UPDATE SupplyOrders SET CarsUntilDelivery = @CarsUntilDelivery WHERE Id = @SupplyOrderId", 
+                    connection);
+                command.Parameters.AddWithValue("@SupplyOrderId", supplyOrderId); 
+                command.Parameters.AddWithValue("@CarsUntilDelivery", carsUntilDelivery); 
+
+                command.ExecuteNonQuery(); 
+            }
+        }
+
+        public void MarkSupplyOrderAsDelivered(int supplyOrderId)
+        {
+            using (SqlConnection connection = new SqlConnection(_connectionString)) 
+            {
+                connection.Open(); 
+
+                SqlCommand command = new SqlCommand(
+                    "UPDATE SupplyOrders SET IsDelivered = 1 WHERE Id = @SupplyOrderId",
+                    connection);
+                command.Parameters.AddWithValue("@SupplyOrderId", supplyOrderId); 
+
+                command.ExecuteNonQuery(); 
+            }
+        }
+
+        public Tuple<int, int, int, int, decimal> GetRepairOrderStats()
+        {
+            using (SqlConnection connection = new SqlConnection(_connectionString))
+            {
+                connection.Open(); 
+
+                SqlCommand command = new SqlCommand( 
+                    "SELECT COUNT(*), " +
+                    "SUM(CASE WHEN Status = 2 THEN 1 ELSE 0 END), " + 
+                    "SUM(CASE WHEN Status = 3 THEN 1 ELSE 0 END), " + 
+                    "SUM(CASE WHEN Status = 4 THEN 1 ELSE 0 END), " + 
+                    "SUM(Profit) FROM RepairOrders", 
+                    connection);
+
+                using (SqlDataReader reader = command.ExecuteReader()) 
+                {
+                    if (reader.Read()) 
+                    {
+                        decimal totalProfit = reader.IsDBNull(4) ? 0 : reader.GetDecimal(4); 
+                        return new Tuple<int, int, int, int, decimal>( 
+                            reader.GetInt32(0),
+                            reader.GetInt32(1), 
+                            reader.GetInt32(2), 
+                            reader.GetInt32(3), 
+                            totalProfit 
+                        );
+                    }
+                }
+            }
+
+            return new Tuple<int, int, int, int, decimal>(0, 0, 0, 0, 0); 
+        }
+
+        public SparePart GetSparePartById(int partId)
+        {
+            using (SqlConnection connection = new SqlConnection(_connectionString)) 
+            {
+                connection.Open(); 
+
+                SqlCommand command = new SqlCommand(
+                    "SELECT Id, Name, PurchasePrice, SellPrice FROM SpareParts WHERE Id = @Id", 
+                    connection);
+                command.Parameters.AddWithValue("@Id", partId);
+
+                using (SqlDataReader reader = command.ExecuteReader())
+                {
+                    if (reader.Read()) 
+                    {
+                        return new SparePart( 
+                            reader.GetInt32(0), 
+                            reader.GetString(1), 
+                            reader.GetDecimal(2), 
+                            reader.GetDecimal(3) 
+                        );
+                    }
+                }
+            }
+
+            return null; 
+        }
+
+        
+        public Dictionary<int, int> GetSupplyOrderItems(int supplyOrderId)
+        {
+            Dictionary<int, int> items = new Dictionary<int, int>();
+
+            using (SqlConnection connection = new SqlConnection(_connectionString)) 
+            {
+                connection.Open(); 
+                SqlCommand command = new SqlCommand( 
+                    "SELECT SparePartId, Quantity FROM SupplyOrderItems WHERE SupplyOrderId = @SupplyOrderId", 
+                    connection);
+                command.Parameters.AddWithValue("@SupplyOrderId", supplyOrderId); 
+
+                using (SqlDataReader reader = command.ExecuteReader()) 
+                {
+                    while (reader.Read()) 
+                    {
+                        items[reader.GetInt32(0)] = reader.GetInt32(1); 
+                    }
+                }
+            }
+
+            return items; 
         }
     }
-    public class SupplyOrder
-    {
-        private static int _nextId = 1;
-        public int Id { get; set; }
-        public Dictionary<SparePart, int> OrderedParts { get; set; }
-        public decimal TotalCost { get; set; }
-        public int CarsUntilDelivery { get; set; }
 
-        public SupplyOrder(Dictionary<SparePart, int> orderedParts, decimal totalCost)
-        {
-            if (orderedParts == null || orderedParts.Count == 0)
-                throw new ArgumentException("Заказ должен содержать детали");
-            if (totalCost <= 0)
-                throw new ArgumentException("Стоимость заказа должна быть положительной");
-
-            Id = _nextId++;
-            OrderedParts = orderedParts;
-            TotalCost = totalCost;
-            CarsUntilDelivery = 2;
-        }
-
-        public void DecrementDeliveryCounter()
-        {
-            if (CarsUntilDelivery > 0)
-                CarsUntilDelivery--;
-        }
-
-        public bool IsReadyForDelivery()
-        {
-            return CarsUntilDelivery <= 0;
-        }
-
-        public override string ToString()
-        {
-            var parts = string.Join(", ", OrderedParts.Select(p => $"{p.Key.Name} x{p.Value}"));
-            return $"Заказ #{Id}: {parts} - доставка через {CarsUntilDelivery} машин";
-        }
-    }
-
-    public class AutoService
+    public class AutoService 
     {
         public string Name { get; set; }
         public decimal Balance { get; private set; }
-        public Warehouse Warehouse { get; set; }
-        public List<RepairOrder> RepairOrders { get; set; }
-        public List<SupplyOrder> SupplyOrders { get; set; }
-        public List<SparePart> AvailablePartTypes { get; set; }
-        public int TotalCarsProcessed { get; set; }
-        private Random _random;
+        public int TotalCarsProcessed { get; set; } 
 
-        public AutoService(string name, decimal initialBalance)
+        private DatabaseService _db;
+        private Random _random; 
+        private List<SparePart> _allParts; 
+
+        public AutoService(string connectionString) 
         {
-            if (string.IsNullOrWhiteSpace(name))
-                throw new ArgumentException("Название сервиса не может быть пустым");
-            if (initialBalance < 0)
-                throw new ArgumentException("Начальный баланс не может быть отрицательным");
-
-            Name = name;
-            Balance = initialBalance;
-            Warehouse = new Warehouse();
-            RepairOrders = new List<RepairOrder>();
-            SupplyOrders = new List<SupplyOrder>();
-            AvailablePartTypes = new List<SparePart>();
-            TotalCarsProcessed = 0;
+            _db = new DatabaseService(connectionString);
             _random = new Random();
+
+           
+            LoadGameState(); 
+            _allParts = _db.GetAllSpareParts();
         }
 
-        public void InitializeStartingParts()
+        private void LoadGameState() 
         {
-            // Создаем каталог доступных деталей
-            AvailablePartTypes.AddRange(new[]
-            {
-                new SparePart(1, "Тормозные колодки", 2000, 60),
-                new SparePart(2, "Масляный фильтр", 500, 50),
-                new SparePart(3, "Воздушный фильтр", 800, 50),
-                new SparePart(4, "Свечи зажигания", 1200, 55),
-                new SparePart(5, "Аккумулятор", 5000, 40),
-                new SparePart(6, "Шины", 4000, 35),
-                new SparePart(7, "Тормозные диски", 3500, 45),
-                new SparePart(8, "Амортизаторы", 6000, 50)
-            });
-
-            // Начальный склад
-            Warehouse.AddPart(AvailablePartTypes[0], 2); // Тормозные колодки
-            Warehouse.AddPart(AvailablePartTypes[1], 3); // Масляный фильтр
-            Warehouse.AddPart(AvailablePartTypes[2], 2); // Воздушный фильтр
+            Tuple<decimal, int, string> state = _db.GetGameState(); 
+            Balance = state.Item1; 
+            TotalCarsProcessed = state.Item2; 
+            Name = state.Item3; 
         }
 
-        private void UpdateBalance(decimal amount)
+        private void SaveGameState() 
         {
-            Balance += amount;
-            if (Balance < 0)
+            _db.UpdateGameState(Balance, TotalCarsProcessed);
+        }
+
+        public void UpdateBalance(decimal amount) 
+        {
+            Balance += amount; 
+            if (Balance < 0) Balance = 0; 
+            SaveGameState(); 
+        }
+
+
+        public Tuple<string, string, SparePart> GenerateRandomClient()
+        {
+            string[] carModels = { "Toyota Camry", "Honda Civic", "BMW X5", "Ford Focus", "Lada Vesta" };
+            string[] clientNames = { "Иван Петров", "Мария Сидорова", "Алексей Козлов", "Ольга Орлова" };
+
+            string randomModel = carModels[_random.Next(carModels.Length)];
+            SparePart randomPart = _allParts[_random.Next(_allParts.Count)];
+            string randomName = clientNames[_random.Next(clientNames.Length)];
+
+            return new Tuple<string, string, SparePart>(randomName, randomModel, randomPart);
+        }
+
+        
+        public bool IsPartAvailable(int sparePartId)
+        {
+            Dictionary<int, int> stock = _db.GetWarehouseStock(); // Получение текущих запасов
+            return stock.ContainsKey(sparePartId) && stock[sparePartId] > 0; // Проверка наличия и количества
+        }
+
+        
+        public void AcceptRepairOrder(string clientName, string carModel, SparePart brokenPart)
+        {
+            Dictionary<int, int> stock = _db.GetWarehouseStock(); 
+            int currentQuantity = stock.ContainsKey(brokenPart.Id) ? stock[brokenPart.Id] : 0; 
+
+            if (currentQuantity > 0) 
             {
-                Balance = 0; // Баланс не может быть отрицательным
+                
+                _db.UpdateWarehouseQuantity(brokenPart.Id, currentQuantity - 1);
+                int clientId = _db.CreateClient(clientName, carModel); 
+                _db.CreateRepairOrder(clientId, brokenPart.Id, (int)RepairOrderStatus.Completed, brokenPart.SellPrice); 
+                UpdateBalance(brokenPart.SellPrice); 
+                Console.WriteLine("Ремонт завершен успешно! Заработано: {0:C}", brokenPart.SellPrice); 
             }
-        }
-
-        public Client GenerateRandomClient()
-        {
-            var carModels = new[]
+            else 
             {
-                "Toyota Camry", "Honda Civic", "BMW X5", "Mercedes C-Class",
-                "Ford Focus", "Hyundai Solaris", "Kia Rio", "Lada Vesta"
-            };
-
-            var randomModel = carModels[_random.Next(carModels.Length)];
-            var randomPart = AvailablePartTypes[_random.Next(AvailablePartTypes.Count)];
-            var car = new Car(randomModel, randomPart);
-
-            var clientNames = new[]
-            {
-                "Иван Петров", "Мария Сидорова", "Алексей Козлов", "Екатерина Новикова",
-                "Дмитрий Волков", "Ольга Орлова", "Сергей Морозов", "Анна Павлова"
-            };
-
-            var randomName = clientNames[_random.Next(clientNames.Length)];
-
-            return new Client(randomName, car);
-        }
-
-        public bool AcceptRepairOrder(RepairOrder order)
-        {
-            if (order.Status != RepairOrderStatus.Pending)
-                return false;
-
-            order.Status = RepairOrderStatus.InProgress;
-            var brokenPart = order.Client.Car.BrokenPart;
-
-            if (Warehouse.IsPartAvailable(brokenPart))
-            {
-                // Есть нужная деталь - успешный ремонт
-                Warehouse.RemovePart(brokenPart);
-                order.CompleteSuccessfully();
-                UpdateBalance(order.Profit);
-                Console.WriteLine($"✅ Ремонт завершен успешно! Заработано: {order.Profit:C}");
-            }
-            else
-            {
-                // Нет нужной детали - ставим случайную (неудачный ремонт)
-                var wrongPart = Warehouse.GetRandomAvailablePart();
-                if (wrongPart != null)
+                
+                List<KeyValuePair<int, int>> availableParts = stock.Where(s => s.Value > 0).ToList();
+                if (availableParts.Count > 0)
                 {
-                    Warehouse.RemovePart(wrongPart);
-                    order.CompleteWithFailure(wrongPart);
-                    UpdateBalance(order.Profit);
-                    Console.WriteLine($"❌ КРИТИЧЕСКАЯ ОШИБКА! Установлена не та деталь.");
-                    Console.WriteLine($"Убыток: {order.Profit:C}");
+                    int randomPartId = availableParts[_random.Next(availableParts.Count)].Key;
+                    SparePart wrongPart = _db.GetSparePartById(randomPartId);
+                    _db.UpdateWarehouseQuantity(randomPartId, stock[randomPartId] - 1);
+                    int clientId = _db.CreateClient(clientName, carModel);
+
+                    decimal penalty = -brokenPart.SellPrice * 2 - wrongPart.PurchasePrice;
+                    _db.CreateRepairOrder(clientId, brokenPart.Id, (int)RepairOrderStatus.Failed, penalty);
+
+                    UpdateBalance(penalty);
+                    Console.WriteLine("ОШИБКА! Установлена не та деталь. Убыток: {0:C}", penalty);
                 }
                 else
                 {
-                    // Нет вообще никаких деталей - автоматический отказ
-                    order.Decline();
-                    UpdateBalance(order.Profit);
-                    Console.WriteLine($"⚠️ Нет деталей для ремонта. Заказ отклонен. Штраф: {-order.Profit:C}");
+
+                    int clientId = _db.CreateClient(clientName, carModel);
+                    _db.CreateRepairOrder(clientId, brokenPart.Id, (int)RepairOrderStatus.Declined, -100);
+
+                    UpdateBalance(-100);
+                    Console.WriteLine("Нет деталей. Заказ отклонен. Штраф: 100 руб");
                 }
             }
 
-            RepairOrders.Add(order);
-            TotalCarsProcessed++;
-            ProcessDeliveries();
-            return true;
+            TotalCarsProcessed++; 
+            SaveGameState(); 
+            ProcessDeliveries(); 
         }
 
-        public bool DeclineRepairOrder(RepairOrder order)
+        // Метод отклонения заказа
+        public void DeclineRepairOrder(string clientName, string carModel, SparePart brokenPart)
         {
-            if (order.Status != RepairOrderStatus.Pending)
-                return false;
+            int clientId = _db.CreateClient(clientName, carModel); // Создание клиента в БД
+            _db.CreateRepairOrder(clientId, brokenPart.Id, (int)RepairOrderStatus.Declined, -100); // Создание отклоненного заказа
 
-            order.Decline();
-            UpdateBalance(order.Profit);
-            RepairOrders.Add(order);
-            TotalCarsProcessed++;
-            Console.WriteLine($"⚠️ Заказ отклонен. Штраф: {-order.Profit:C}");
+            UpdateBalance(-100); 
+            TotalCarsProcessed++; 
+            SaveGameState(); 
+            Console.WriteLine(" Заказ отклонен. Штраф: 100 руб"); 
 
-            ProcessDeliveries();
-            return true;
+            ProcessDeliveries(); 
         }
 
         public void ShowPartsCatalog()
         {
-            Console.WriteLine("\n=== КАТАЛОГ ДЕТАЛЕЙ ===");
-            for (int i = 0; i < AvailablePartTypes.Count; i++)
+            Console.WriteLine("\n=== КАТАЛОГ ДЕТАЛЕЙ ==="); 
+            foreach (SparePart part in _allParts) // Перебор всех запчастей
             {
-                var part = AvailablePartTypes[i];
-                Console.WriteLine($"{i + 1}. {part}");
+                Console.WriteLine("{0}. {1}", part.Id, part); 
             }
         }
 
+        
         public void PurchaseParts()
         {
-            ShowPartsCatalog();
-            Console.WriteLine($"\nВаш баланс: {Balance:C}");
+            ShowPartsCatalog(); // Показ каталога
+            Console.WriteLine("\nБаланс: {0:C}", Balance); // Показ текущего баланса
 
-            var orderedParts = new Dictionary<SparePart, int>();
-            decimal totalCost = 0;
+            decimal totalCost = 0; // Общая стоимость заказа
+            Dictionary<int, int> orderItems = new Dictionary<int, int>(); // Словарь для хранения заказанных деталей
 
-            while (true)
+            while (true) 
             {
-                Console.Write("\nВведите номер детали для заказа (0 - завершить): ");
-                if (!int.TryParse(Console.ReadLine(), out int partIndex) || partIndex < 0 || partIndex > AvailablePartTypes.Count)
+                Console.Write("\nВведите ID детали (0 - завершить): "); 
+                string input = Console.ReadLine(); 
+                int partId;
+                if (!int.TryParse(input, out partId) || partId < 0 || partId > _allParts.Count) 
                 {
-                    Console.WriteLine("Неверный номер детали!");
-                    continue;
+                    Console.WriteLine("Неверный ID!"); 
+                    continue; 
                 }
 
-                if (partIndex == 0)
-                    break;
+                if (partId == 0) break; 
 
-                var selectedPart = AvailablePartTypes[partIndex - 1];
-
-                Console.Write($"Введите количество (доступно средств: {(Balance - totalCost):C}): ");
-                if (!int.TryParse(Console.ReadLine(), out int quantity) || quantity <= 0)
+                SparePart part = _allParts.FirstOrDefault(p => p.Id == partId); 
+                if (part == null) 
                 {
-                    Console.WriteLine("Неверное количество!");
-                    continue;
+                    Console.WriteLine("Деталь не найдена!"); 
+                    continue; 
                 }
 
-                var cost = selectedPart.PurchasePrice * quantity;
-                if (totalCost + cost > Balance)
+                Console.Write("Количество (макс: {0}): ", (int)((Balance - totalCost) / part.PurchasePrice)); 
+                input = Console.ReadLine();
+                int quantity; 
+                if (!int.TryParse(input, out quantity) || quantity <= 0) 
                 {
-                    Console.WriteLine("Недостаточно средств!");
-                    continue;
+                    Console.WriteLine("Неверное количество!"); 
+                    continue; 
                 }
 
-                if (orderedParts.ContainsKey(selectedPart))
+                decimal cost = part.PurchasePrice * quantity; 
+                if (totalCost + cost > Balance) 
                 {
-                    orderedParts[selectedPart] += quantity;
-                }
-                else
-                {
-                    orderedParts[selectedPart] = quantity;
+                    Console.WriteLine("Недостаточно средств!"); 
+                    continue; 
                 }
 
-                totalCost += cost;
-                Console.WriteLine($"Добавлено: {selectedPart.Name} x{quantity} = {cost:C}");
-                Console.WriteLine($"Общая стоимость заказа: {totalCost:C}");
+                if (orderItems.ContainsKey(partId)) 
+                {
+                    orderItems[partId] += quantity;  
+                }
+                else 
+                {
+                    orderItems[partId] = quantity; 
+                }
+
+                totalCost += cost; 
+                Console.WriteLine("Добавлено: {0} x{1} = {2:C}", part.Name, quantity, cost); 
             }
 
-            if (orderedParts.Count > 0)
+            if (orderItems.Count > 0) 
             {
-                var supplyOrder = new SupplyOrder(orderedParts, totalCost);
-                SupplyOrders.Add(supplyOrder);
-                UpdateBalance(-totalCost);
-                Console.WriteLine($"\n✅ Заказ #{supplyOrder.Id} создан! Доставка через 2 машины.");
-                Console.WriteLine($"Списано: {totalCost:C}, Баланс: {Balance:C}");
-            }
-            else
-            {
-                Console.WriteLine("Заказ не создан.");
+                int orderId = _db.CreateSupplyOrder(totalCost); 
+                foreach (KeyValuePair<int, int> item in orderItems) // Перебор всех заказанных деталей
+                {
+                    _db.AddSupplyOrderItem(orderId, item.Key, item.Value); // Добавление детали в заказ
+                }
+
+                UpdateBalance(-totalCost); 
+                Console.WriteLine("\n Заказ #{0} создан! Доставка через 2 машины.", orderId); // Сообщение об успехе
             }
         }
 
+        
         private void ProcessDeliveries()
         {
-            foreach (var order in SupplyOrders.ToList())
+            List<SupplyOrder> orders = _db.GetPendingSupplyOrders(); // Получение ожидающих заказов
+            foreach (SupplyOrder order in orders) // Перебор всех заказов
             {
-                order.DecrementDeliveryCounter();
+                order.DecrementDeliveryCounter(); // Уменьшение счетчика доставки
+                _db.UpdateSupplyOrderDelivery(order.Id, order.CarsUntilDelivery); // Обновление в БД
 
-                if (order.IsReadyForDelivery())
+                if (order.IsReadyForDelivery()) // Если заказ готов к доставке
                 {
-                    // Доставляем детали на склад
-                    foreach (var (part, quantity) in order.OrderedParts)
+                    
+                    Dictionary<int, int> orderItems = _db.GetSupplyOrderItems(order.Id); // Получение деталей заказа
+                    foreach (KeyValuePair<int, int> item in orderItems) // Перебор всех деталей
                     {
-                        Warehouse.AddPart(part, quantity);
+                        Dictionary<int, int> stock = _db.GetWarehouseStock(); // Получение текущих запасов
+                        int currentQty = stock.ContainsKey(item.Key) ? stock[item.Key] : 0; // Получение текущего количества
+                        _db.UpdateWarehouseQuantity(item.Key, currentQty + item.Value); // Увеличение количества на складе
                     }
 
-                    SupplyOrders.Remove(order);
-                    Console.WriteLine($"\n📦 Доставлен заказ #{order.Id}!");
-                    foreach (var (part, quantity) in order.OrderedParts)
-                    {
-                        Console.WriteLine($"   + {part.Name} x{quantity}");
-                    }
+                    _db.MarkSupplyOrderAsDelivered(order.Id); // Отметка заказа как доставленного
+                    Console.WriteLine("\n Доставлен заказ #{0}!", order.Id); 
                 }
             }
         }
 
+        
         public void ShowStatus()
         {
-            Console.WriteLine($"\n=== {Name.ToUpper()} ===");
-            Console.WriteLine($"Баланс: {Balance:C}");
-            Console.WriteLine($"Обработано машин: {TotalCarsProcessed}");
-            Console.WriteLine($"Активных заказов на поставку: {SupplyOrders.Count}");
+            Console.WriteLine("\n=== {0} ===", Name.ToUpper()); 
+            Console.WriteLine("Баланс: {0:C}", Balance); 
+            Console.WriteLine("Обработано машин: {0}", TotalCarsProcessed); // Показ количества машин
 
-            Warehouse.DisplayStock();
-
-            if (SupplyOrders.Count > 0)
+            Dictionary<int, int> stock = _db.GetWarehouseStock(); // Получение запасов
+            Console.WriteLine("\n=== СКЛАД ==="); // Заголовок склада
+            if (stock.Count == 0) 
             {
-                Console.WriteLine("\n=== ЗАКАЗЫ НА ПОСТАВКУ ===");
-                foreach (var order in SupplyOrders)
+                Console.WriteLine("Склад пуст"); 
+            }
+            else 
+            {
+                foreach (KeyValuePair<int, int> item in stock) // Перебор всех деталей
                 {
-                    Console.WriteLine($"- {order}");
+                    SparePart part = _allParts.First(p => p.Id == item.Key); // Поиск информации о детали
+                    Console.WriteLine("- {0}: {1} шт.", part.Name, item.Value); 
+                }
+            }
+
+            List<SupplyOrder> pendingOrders = _db.GetPendingSupplyOrders(); // Получение ожидающих поставок
+            if (pendingOrders.Count > 0) // Если есть ожидающие поставки
+            {
+                Console.WriteLine("\n=== ЗАКАЗЫ НА ПОСТАВКУ ==="); 
+                foreach (SupplyOrder order in pendingOrders) // Перебор всех поставок
+                {
+                    Console.WriteLine("- {0}", order); 
                 }
             }
         }
 
+        
         public void ShowOrderHistory()
         {
-            Console.WriteLine("\n=== ИСТОРИЯ ЗАКАЗОВ ===");
-            if (RepairOrders.Count == 0)
+            List<RepairOrder> orders = _db.GetRecentRepairOrders(10); // Получение последних заказов
+            Tuple<int, int, int, int, decimal> stats = _db.GetRepairOrderStats(); // Получение статистики
+
+            Console.WriteLine("\n=== ИСТОРИЯ ЗАКАЗОВ ==="); 
+            foreach (RepairOrder order in orders) 
             {
-                Console.WriteLine("Заказов пока нет");
-                return;
+                Console.WriteLine("- {0}", order); 
             }
 
-            foreach (var order in RepairOrders.TakeLast(10)) // Последние 10 заказов
-            {
-                Console.WriteLine($"- {order}");
-            }
-
-            var totalProfit = RepairOrders.Sum(o => o.Profit);
-            var successfulOrders = RepairOrders.Count(o => o.Status == RepairOrderStatus.Completed);
-            var failedOrders = RepairOrders.Count(o => o.Status == RepairOrderStatus.Failed);
-
-            Console.WriteLine($"\nИтого: {RepairOrders.Count} заказов");
-            Console.WriteLine($"Успешных: {successfulOrders}, Неудачных: {failedOrders}");
-            Console.WriteLine($"Общая прибыль: {totalProfit:C}");
+            Console.WriteLine("\nВсего: {0} заказов", stats.Item1); 
+            Console.WriteLine("Успешных: {0}, Неудачных: {1}, Отклоненных: {2}", stats.Item2, stats.Item3, stats.Item4); 
+            Console.WriteLine("Общая прибыль: {0:C}", stats.Item5); 
         }
     }
 
-    public class Game
+    public class Game 
     {
-        private AutoService _autoService;
-        private bool _isRunning;
+        private AutoService _service; 
+        private string _connectionString; 
 
-        public Game(AutoService autoService)
+        public Game(string connectionString) 
         {
-            _autoService = autoService;
-            _isRunning = true;
+            _connectionString = connectionString; 
         }
 
-        public void Start()
+        public void Start() 
         {
-            Console.WriteLine($"Добро пожаловать в {_autoService.Name}!");
-            Console.WriteLine("Ваша задача - ремонтировать автомобили и зарабатывать деньги.");
-            Console.WriteLine("Будьте осторожны: неправильный ремонт приведет к убыткам!\n");
+            _service = new AutoService(_connectionString); 
 
-            while (_isRunning && _autoService.Balance > 0)
+            Console.WriteLine("Добро пожаловать в {0}!", _service.Name); 
+            Console.WriteLine("Ваша задача - ремонтировать автомобили и зарабатывать деньги."); 
+            Console.WriteLine("Будьте осторожны: неправильный ремонт приведет к убыткам!\n"); 
+
+            while (_service.Balance > 0) 
             {
-                ProcessNextClient();
+                ProcessClient(); 
+                if (_service.Balance <= 0) break; 
 
-                if (_autoService.Balance <= 0)
-                {
-                    Console.WriteLine("\n💸 ВЫ БАНКРОТ! Игра окончена.");
-                    break;
-                }
-
-                Console.WriteLine("\nНажмите любую клавишу для продолжения...");
-                Console.ReadKey();
+                Console.WriteLine("\nНажмите Enter для следующего клиента..."); 
+                Console.ReadLine(); 
             }
 
-            ShowFinalStats();
+            Console.WriteLine("\nБАНКРОТ! Игра окончена."); 
+            _service.ShowOrderHistory(); 
+            Console.ReadLine(); 
         }
 
-        private void ProcessNextClient()
+        private void ProcessClient() 
         {
-            Console.Clear();
-            _autoService.ShowStatus();
+            Console.Clear(); 
+            _service.ShowStatus(); 
 
-            // Создаем нового клиента
-            var client = _autoService.GenerateRandomClient();
-            var order = new RepairOrder(client);
+            Tuple<string, string, SparePart> clientInfo = _service.GenerateRandomClient(); 
+            string clientName = clientInfo.Item1; 
+            string carModel = clientInfo.Item2; 
+            SparePart brokenPart = clientInfo.Item3; 
 
-            Console.WriteLine($"\n=== НОВЫЙ КЛИЕНТ ===");
-            Console.WriteLine($"Клиент: {client}");
-            Console.WriteLine($"Поломка: {client.Car.BrokenPart.Name}");
-            Console.WriteLine($"Стоимость ремонта: {order.CalculateRepairCost():C}");
+            Console.WriteLine("\n=== НОВЫЙ КЛИЕНТ ==="); 
+            Console.WriteLine("Клиент: {0}", clientName); 
+            Console.WriteLine("Автомобиль: {0}", carModel); 
+            Console.WriteLine("Поломка: {0}", brokenPart.Name); 
+            Console.WriteLine("Стоимость ремонта: {0:C}", brokenPart.SellPrice); 
+            Console.WriteLine("Деталь на складе: {0}", (_service.IsPartAvailable(brokenPart.Id) ? "ЕСТЬ" : "НЕТ")); 
 
-            // Проверяем наличие детали
-            var isPartAvailable = _autoService.Warehouse.IsPartAvailable(client.Car.BrokenPart);
-            Console.WriteLine($"Деталь на складе: {(isPartAvailable ? "✅ ЕСТЬ" : "❌ НЕТ")}");
+            Console.WriteLine("\n1. Принять заказ"); 
+            Console.WriteLine("2. Отклонить заказ (штраф 100 руб)"); 
+            Console.WriteLine("3. Купить запчасти"); 
+            Console.WriteLine("4. История заказов"); 
 
-            ShowMenu(isPartAvailable);
-
-            var choice = GetUserChoice(1, 4);
-            ProcessMenuChoice(choice, order);
+            int choice = GetChoice(1, 4); 
+            ProcessChoice(choice, clientName, carModel, brokenPart); 
         }
 
-        private void ShowMenu(bool isPartAvailable)
+        private int GetChoice(int min, int max) 
         {
-            Console.WriteLine("\n=== ВАШИ ДЕЙСТВИЯ ===");
-            Console.WriteLine("1. Принять заказ и выполнить ремонт");
-
-            if (isPartAvailable)
+            while (true) 
             {
-                Console.WriteLine("2. Отклонить заказ (штраф 100 руб)");
-            }
-            else
-            {
-                Console.WriteLine("2. Отклонить заказ (штраф 100 руб) - РЕКОМЕНДУЕТСЯ!");
-            }
-
-            Console.WriteLine("3. Заказать запчасти");
-            Console.WriteLine("4. Показать историю заказов");
-        }
-
-        private int GetUserChoice(int min, int max)
-        {
-            while (true)
-            {
-                Console.Write($"\nВыберите действие ({min}-{max}): ");
-                if (int.TryParse(Console.ReadLine(), out int choice) && choice >= min && choice <= max)
-                {
-                    return choice;
-                }
-                Console.WriteLine("Неверный выбор! Попробуйте снова.");
+                Console.Write("Выбор ({0}-{1}): ", min, max); 
+                string input = Console.ReadLine(); 
+                int choice; 
+                if (int.TryParse(input, out choice) && choice >= min && choice <= max) 
+                    return choice; 
+                Console.WriteLine("Неверный выбор!"); 
             }
         }
 
-        private void ProcessMenuChoice(int choice, RepairOrder order)
+        private void ProcessChoice(int choice, string clientName, string carModel, SparePart brokenPart) 
         {
-            switch (choice)
+            switch (choice) 
             {
                 case 1:
-                    _autoService.AcceptRepairOrder(order);
+                    _service.AcceptRepairOrder(clientName, carModel, brokenPart); // Принятие заказа
                     break;
-
                 case 2:
-                    _autoService.DeclineRepairOrder(order);
+                    _service.DeclineRepairOrder(clientName, carModel, brokenPart); // Отклонение заказа
                     break;
-
                 case 3:
-                    _autoService.PurchaseParts();
+                    _service.PurchaseParts(); // Покупка запчастей
                     break;
-
                 case 4:
-                    _autoService.ShowOrderHistory();
-                    Console.WriteLine("\nНажмите любую клавишу для продолжения...");
-                    Console.ReadKey();
-                    ProcessNextClient(); // Возвращаемся к тому же клиенту
+                    _service.ShowOrderHistory(); // Просмотр истории
+                    Console.WriteLine("\nНажмите Enter чтобы продолжить..."); 
+                    Console.ReadLine(); 
+                    ProcessClient(); 
                     break;
-            }
-        }
-
-        private void ShowFinalStats()
-        {
-            Console.WriteLine("\n=== ИТОГИ ИГРЫ ===");
-            Console.WriteLine($"Обработано машин: {_autoService.TotalCarsProcessed}");
-
-            var totalProfit = _autoService.RepairOrders.Sum(o => o.Profit);
-            Console.WriteLine($"Общая прибыль: {totalProfit:C}");
-
-            var successfulOrders = _autoService.RepairOrders.Count(o => o.Status == RepairOrderStatus.Completed);
-            var failedOrders = _autoService.RepairOrders.Count(o => o.Status == RepairOrderStatus.Failed);
-            var declinedOrders = _autoService.RepairOrders.Count(o => o.Status == RepairOrderStatus.Declined);
-
-            Console.WriteLine($"Успешных ремонтов: {successfulOrders}");
-            Console.WriteLine($"Неудачных ремонтов: {failedOrders}");
-            Console.WriteLine($"Отклоненных заказов: {declinedOrders}");
-
-            if (successfulOrders > 0)
-            {
-                var averageProfit = totalProfit / _autoService.RepairOrders.Count;
-                Console.WriteLine($"Средняя прибыль на заказ: {averageProfit:C}");
             }
         }
     }
 }
-
 
 //--Создание базы данных
 //CREATE DATABASE AutoServiceDB;
