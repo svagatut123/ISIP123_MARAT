@@ -1,7 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
-
+using prac7;
 // Основной класс симулятора автосервиса
 class AutoServiceGame
 {
@@ -22,14 +22,14 @@ class AutoServiceGame
 
     private void InitializeGame()
     {
-        using (var context = new maratpractic7Entities())
+        using (var context = new maratpractic7Entities3())
         {
             // Загружаем состояние игры из таблицы GameState
             var gameState = context.GameState.FirstOrDefault(g => g.Id == 1);
             if (gameState != null)
             {
                 money = gameState.Balance;
-                totalCarsProcessed = gameState.TotalCarsProcessed ?? 0;
+                totalCarsProcessed = gameState.TotalCarsProcessed = 0;
                 Console.WriteLine($"Загружена игра: {gameState.ServiceName}");
             }
             else
@@ -43,7 +43,6 @@ class AutoServiceGame
                     Balance = money,
                     TotalCarsProcessed = totalCarsProcessed,
                     ServiceName = "Мой Автосервис",
-                    CreatedDate = DateTime.Now,
                     LastUpdated = DateTime.Now
                 };
                 context.GameState.Add(newGameState);
@@ -202,7 +201,7 @@ class AutoServiceGame
         // Обновляем базу данных
         if (deliveredOrders.Count > 0)
         {
-            using (var context = new maratpractic7Entities())
+            using (var context = new maratpractic7Entities3())
             {
                 // Помечаем заказы как доставленные
                 var ordersToUpdate = context.SupplyOrders
@@ -226,7 +225,7 @@ class AutoServiceGame
         }
 
         // Обновляем оставшиеся заказы в базе
-        using (var context = new maratpractic7Entities())
+        using (var context = new maratpractic7Entities3())
         {
             foreach (var order in purchaseOrders)
             {
@@ -282,7 +281,7 @@ class AutoServiceGame
         };
 
         // Сохраняем клиента в базу
-        using (var context = new maratpractic7Entities())
+        using (var context = new maratpractic7Entities3())
         {
             var dbClient = new Clients
             {
@@ -300,7 +299,7 @@ class AutoServiceGame
 
     private SparePart GetRandomSparePart()
     {
-        using (var context = new maratpractic7Entities())
+        using (var context = new maratpractic7Entities3())
         {
             var parts = context.SpareParts.ToList();
 
@@ -366,7 +365,7 @@ class AutoServiceGame
         }
 
         // Сохраняем заказ на ремонт
-        using (var context = new maratpractic7Entities())
+        using (var context = new maratpractic7Entities3())
         {
             var repairOrder = new RepairOrders
             {
@@ -392,7 +391,7 @@ class AutoServiceGame
         money -= penalty;
 
         // Сохраняем заказ на ремонт
-        using (var context = new maratpractic7Entities())
+        using (var context = new maratpractic7Entities3())
         {
             var repairOrder = new RepairOrders
             {
@@ -483,7 +482,7 @@ class AutoServiceGame
     private List<SparePart> GetAvailableSpareParts()
     {
         var parts = new List<SparePart>();
-        using (var context = new maratpractic7Entities())
+        using (var context = new maratpractic7Entities3())
         {
             var dbParts = context.SpareParts.ToList();
             foreach (var dbPart in dbParts)
@@ -502,7 +501,7 @@ class AutoServiceGame
 
     private void CreateSupplyOrder(SparePart part, int quantity)
     {
-        using (var context = new maratpractic7Entities())
+        using (var context = new maratpractic7Entities3())
         {
             // Создаем заказ на поставку
             var supplyOrder = new SupplyOrders
@@ -555,7 +554,7 @@ class AutoServiceGame
         Console.Clear();
         Console.WriteLine("=== СТАТИСТИКА ===");
 
-        using (var context = new maratpractic7Entities())
+        using (var context = new maratpractic7Entities3())
         {
             // Статистика по заказам
             var stats = context.RepairOrders
@@ -598,7 +597,7 @@ class AutoServiceGame
 
     private void SaveGameState()
     {
-        using (var context = new maratpractic7Entities())
+        using (var context = new maratpractic7Entities3())
         {
             var gameState = context.GameState.FirstOrDefault(g => g.Id == 1);
             if (gameState != null)
@@ -616,7 +615,7 @@ class AutoServiceGame
 
     private void UpdateWarehouseInDatabase()
     {
-        using (var context = new maratpractic7Entities())
+        using (var context = new maratpractic7Entities3())
         {
             foreach (var part in warehouse)
             {
@@ -644,7 +643,7 @@ class AutoServiceGame
 
     private void UpdateStockInDb(string partName, int amount)
     {
-        using (var context = new maratpractic7Entities())
+        using (var context = new maratpractic7Entities3())
         {
             var partId = GetSparePartId(partName);
             var warehouseItem = context.Warehouse.FirstOrDefault(w => w.SparePartId == partId);
@@ -677,7 +676,7 @@ class AutoServiceGame
 
     private int GetSparePartId(string partName)
     {
-        using (var context = new maratpractic7Entities())
+        using (var context = new maratpractic7Entities3())
         {
             var part = context.SpareParts.FirstOrDefault(sp => sp.Name == partName);
             return part?.Id ?? 0;

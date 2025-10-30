@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="utf-8"?>
+<edmx:Edmx Version="3.0" xmlns:edmx="http://schemas.microsoft.com/ado/2009/11/edmx">
+ <!-- EF Designer content (DO NOT EDIT MANUALLY BELOW HERE) -->
+  <edmx:Designer xmlns="http://schemas.microsoft.com/ado/2009/11/edmx">
+    <!-- Diagram content (shape and connector positions) -->
+    <edmx:Diagrams>
+      <Diagram DiagramId="d58c3ba5be124813bfd1b82c1aa7da04" Name="Diagram1">
+        <EntityTypeShape EntityType="Maratpractic7Model.Clients" Width="1.5" PointX="0.75" PointY="0.875" IsExpanded="true" />
+        <EntityTypeShape EntityType="Maratpractic7Model.GameState" Width="1.5" PointX="5.75" PointY="1.125" IsExpanded="true" />
+        <EntityTypeShape EntityType="Maratpractic7Model.RepairOrders" Width="1.5" PointX="3" PointY="4.5" IsExpanded="true" />
+        <EntityTypeShape EntityType="Maratpractic7Model.SpareParts" Width="1.5" PointX="0.75" PointY="4.5" IsExpanded="true" />
+        <EntityTypeShape EntityType="Maratpractic7Model.SupplyOrderItems" Width="1.5" PointX="6" PointY="4.75" IsExpanded="true" />
+        <EntityTypeShape EntityType="Maratpractic7Model.SupplyOrders" Width="1.5" PointX="3.75" PointY="0.75" IsExpanded="true" />
+        <EntityTypeShape EntityType="Maratpractic7Model.sysdiagrams" Width="1.5" PointX="7.75" PointY="1.125" IsExpanded="true" />
+        <EntityTypeShape EntityType="Maratpractic7Model.Warehouse" Width="1.5" PointX="3" PointY="11.25" IsExpanded="true" />
+        <AssociationConnector Association="Maratpractic7Model.FK__RepairOrd__Clien__534D60F1" ManuallyRouted="false" />
+        <AssociationConnector Association="Maratpractic7Model.FK__RepairOrd__Broke__5441852A" ManuallyRouted="false" />
+        <AssociationConnector Association="Maratpractic7Model.FK__SupplyOrd__Spare__66603565" ManuallyRouted="false" />
+        <AssociationConnector Association="Maratpractic7Model.FK__Warehouse__Spare__59FA5E80" ManuallyRouted="false" />
+        <AssociationConnector Association="Maratpractic7Model.FK__SupplyOrd__Suppl__656C112C" ManuallyRouted="false" />
+      </Diagram>
+    </edmx:Diagrams>
+  </edmx:Designer>
+</edmx:Edmx>
