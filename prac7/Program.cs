@@ -1,8 +1,18 @@
-﻿using System;
+﻿using prac7;
+using System;
 using System.Collections.Generic;
+using System.ComponentModel.DataAnnotations;
 using System.Linq;
-using prac7;
-// Основной класс симулятора автосервиса
+
+// Классы моделей для вашей БД
+public class Client
+{
+    public string CarModel { get; set; }
+    public string CarBrand { get; set; }
+    public DateTime CreatedDate { get; set; }
+}
+
+// Основной класс автосервиса
 class AutoServiceGame
 {
     private decimal money;
@@ -10,6 +20,21 @@ class AutoServiceGame
     private List<PurchaseOrder> purchaseOrders;
     private Random random;
     private int totalCarsProcessed;
+    private int currentWarehouseId = 1; // Используем склад с ID = 1
+
+    // Списки для генерации случайных автомобилей
+    private string[] carBrands = new[]
+    {
+        "Toyota", "Honda", "Ford", "BMW", "Mercedes", "Audi", "Volkswagen",
+        "Hyundai", "Kia", "Nissan", "Mazda", "Subaru", "Lexus", "Chevrolet"
+    };
+
+    private string[] carModels = new[]
+    {
+        "Camry", "Civic", "Focus", "X5", "C-Class", "A4", "Golf",
+        "Elantra", "Rio", "Altima", "CX-5", "Outback", "RX", "Cruze",
+        "Corolla", "Accord", "Fusion", "3 Series", "E-Class", "Q5"
+    };
 
     public AutoServiceGame()
     {
@@ -22,116 +47,83 @@ class AutoServiceGame
 
     private void InitializeGame()
     {
-        using (var context = new maratpractic7Entities3())
+        // Используем существующий контекст из Core
+        var context = Core.Context;
+
+        // Загружаем баланс из WareHouse
+        var warehouseData = context.WareHouse.FirstOrDefault(w => w.Id == currentWarehouseId);
+        if (warehouseData != null)
         {
-            // Загружаем состояние игры из таблицы GameState
-            var gameState = context.GameState.FirstOrDefault(g => g.Id == 1);
-            if (gameState != null)
-            {
-                money = gameState.Balance;
-                totalCarsProcessed = gameState.TotalCarsProcessed = 0;
-                Console.WriteLine($"Загружена игра: {gameState.ServiceName}");
-            }
-            else
-            {
-                // Создаем новое состояние игры, если оно не существует
-                money = 5000;
-                totalCarsProcessed = 0;
-
-                var newGameState = new GameState
-                {
-                    Balance = money,
-                    TotalCarsProcessed = totalCarsProcessed,
-                    ServiceName = "Мой Автосервис",
-                    LastUpdated = DateTime.Now
-                };
-                context.GameState.Add(newGameState);
-                context.SaveChanges();
-                Console.WriteLine("Создана новая игра!");
-            }
-
-            // Загружаем склад из таблицы Warehouse
-            var warehouseData = context.Warehouse
-                .Where(w => w.Quantity > 0)
-                .Join(context.SpareParts,
-                      w => w.SparePartId,
-                      sp => sp.Id,
-                      (w, sp) => new { sp.Name, w.Quantity })
-                .ToList();
-
-            foreach (var item in warehouseData)
-            {
-                warehouse[item.Name] = item.Quantity;
-            }
-
-            // Загружаем ожидающие поставки из таблицы SupplyOrders
-            var pendingOrders = context.SupplyOrders
-                .Where(so => !so.IsDelivered)
-                .Join(context.SupplyOrderItems,
-                      so => so.Id,
-                      soi => soi.SupplyOrderId,
-                      (so, soi) => new { so, soi })
-                .Join(context.SpareParts,
-                      x => x.soi.SparePartId,
-                      sp => sp.Id,
-                      (x, sp) => new {
-                          OrderId = x.so.Id,
-                          PartName = sp.Name,
-                          Quantity = x.soi.Quantity,
-                          CarsUntilDelivery = x.so.CarsUntilDelivery
-                      })
-                .ToList();
-
-            foreach (var order in pendingOrders)
-            {
-                purchaseOrders.Add(new PurchaseOrder(
-                    order.OrderId,
-                    order.PartName,
-                    order.Quantity,
-                    order.CarsUntilDelivery
-                ));
-            }
+            money = warehouseData.BBalance;
         }
+        else
+        {
+            // Создаем новый склад, если не существует
+            money = 10000; // Начальный баланс как в БД
+            var newWarehouse = new WareHouse
+            {
+                Id = currentWarehouseId,
+                BBalance = money
+            };
+            context.WareHouse.Add(newWarehouse);
+            context.SaveChanges();
+        }
+
+        // Загружаем детали со склада
+        var warehouseParts = context.WarehouseParts
+            .Include("Parts")
+            .Where(wp => wp.WarehouseID == currentWarehouseId && wp.Count > 0)
+            .ToList();
+
+        foreach (var wp in warehouseParts)
+        {
+            warehouse[wp.Parts.Name] = wp.Count;
+        }
+
+        Console.WriteLine("Автосервис инициализирован!");
+        Console.WriteLine($"Начальный баланс: {money:C}");
     }
 
     public void RunGame()
     {
-        Console.WriteLine("=== АВТОСЕРВИС ===");
-        Console.WriteLine($"Баланс: {money:C}");
-        Console.WriteLine($"Обслужено автомобилей: {totalCarsProcessed}");
-        Console.WriteLine("Нажмите любую клавишу для начала обслуживания клиентов...");
-        Console.ReadKey();
+        Console.OutputEncoding = System.Text.Encoding.UTF8;
+        Console.WriteLine("=== АВТОСЕРВИС GMWOG ===");
 
-        while (true)
+        while (money > 0)
         {
             Console.Clear();
-            Console.WriteLine($"=== КЛИЕНТ №{totalCarsProcessed + 1} ===");
+            Console.WriteLine($"=== ОБСЛУЖИВАНИЕ КЛИЕНТА №{totalCarsProcessed + 1} ===");
 
             ProcessDeliveries();
             ShowStatus();
 
-            // Создаем нового клиента
+            // Проверяем баланс после доставок
+            if (money <= 0)
+            {
+                GameOver();
+                return;
+            }
+
+            // Создаем нового клиента (автоматически)
             var client = CreateNewClient();
             var brokenPart = GetRandomSparePart();
-            var repairCost = brokenPart.SellPrice;
+            var repairCost = CalculateRepairCost(brokenPart);
 
-            Console.WriteLine($"\nКлиент: {client.Name}");
-            Console.WriteLine($"Автомобиль: {client.CarModel}");
-            Console.WriteLine($"Поломка: {brokenPart.Name}");
+            Console.WriteLine($"\nДанные клиента:");
+            Console.WriteLine($"Марка автомобиля: {client.CarBrand}");
+            Console.WriteLine($"Модель: {client.CarModel}");
+            Console.WriteLine($"\nПоломка: {brokenPart.Name}");
             Console.WriteLine($"Стоимость ремонта: {repairCost:C}");
 
             // Проверяем наличие детали на складе
             bool hasPart = warehouse.ContainsKey(brokenPart.Name) && warehouse[brokenPart.Name] > 0;
-
-            Console.WriteLine($"Наличие на складе: {(hasPart ? " В наличии" : " Нет в наличии")}");
+            Console.WriteLine($"Наличие на складе: {(hasPart ? "✓ В наличии" : "✗ Нет в наличии")}");
 
             Console.WriteLine("\nВаши действия:");
             Console.WriteLine("1 - Взять заказ (если есть деталь на складе)");
-            Console.WriteLine("2 - Отказать клиенту (штраф 20% от стоимости ремонта)");
+            Console.WriteLine("2 - Отказать клиенту (штраф 3000 руб.)");
             Console.WriteLine("3 - Закупить запчасти");
             Console.WriteLine("4 - Показать склад");
-            Console.WriteLine("5 - Показать статистику");
-            Console.WriteLine("6 - Выйти из игры");
 
             string choice = Console.ReadLine();
 
@@ -141,7 +133,7 @@ class AutoServiceGame
                     AcceptOrder(client, brokenPart, repairCost, hasPart);
                     break;
                 case "2":
-                    RefuseOrder(client, brokenPart, repairCost);
+                    RefuseOrder(client);
                     break;
                 case "3":
                     ShowPurchaseMenu();
@@ -151,15 +143,6 @@ class AutoServiceGame
                     Console.WriteLine("Нажмите любую клавишу для продолжения...");
                     Console.ReadKey();
                     continue;
-                case "5":
-                    ShowStatistics();
-                    Console.WriteLine("Нажмите любую клавишу для продолжения...");
-                    Console.ReadKey();
-                    continue;
-                case "6":
-                    SaveGameState();
-                    Console.WriteLine($"Игра завершена! Итоговый баланс: {money:C}");
-                    return;
                 default:
                     Console.WriteLine("Неверный выбор! Нажмите любую клавишу для продолжения...");
                     Console.ReadKey();
@@ -169,20 +152,29 @@ class AutoServiceGame
             totalCarsProcessed++;
             SaveGameState();
 
-            Console.WriteLine("Нажмите любую клавишу для следующего клиента...");
+            // Проверяем баланс после обработки заказа
+            if (money <= 0)
+            {
+                GameOver();
+                return;
+            }
+
+            Console.WriteLine("\nНажмите любую клавишу для следующего клиента...");
             Console.ReadKey();
         }
+
+        GameOver();
     }
 
     private void ProcessDeliveries()
     {
-        var deliveredOrders = new List<int>();
+        var deliveredOrders = new List<PurchaseOrder>();
 
         foreach (var order in purchaseOrders.ToList())
         {
-            order.CarsUntilDelivery--;
+            order.DaysUntilDelivery--;
 
-            if (order.CarsUntilDelivery <= 0)
+            if (order.DaysUntilDelivery <= 0)
             {
                 // Доставляем заказ
                 if (warehouse.ContainsKey(order.PartName))
@@ -191,58 +183,10 @@ class AutoServiceGame
                     warehouse[order.PartName] = order.Quantity;
 
                 Console.WriteLine($"✓ Доставлены {order.Quantity} {order.PartName}");
-                deliveredOrders.Add(order.OrderId);
+                deliveredOrders.Add(order);
                 purchaseOrders.Remove(order);
 
                 UpdateStockInDb(order.PartName, warehouse[order.PartName]);
-            }
-        }
-
-        // Обновляем базу данных
-        if (deliveredOrders.Count > 0)
-        {
-            using (var context = new maratpractic7Entities3())
-            {
-                // Помечаем заказы как доставленные
-                var ordersToUpdate = context.SupplyOrders
-                    .Where(so => deliveredOrders.Contains(so.Id))
-                    .ToList();
-
-                foreach (var order in ordersToUpdate)
-                {
-                    order.IsDelivered = true;
-                }
-
-                try
-                {
-                    context.SaveChanges();
-                }
-                catch (Exception ex)
-                {
-                    Console.WriteLine($"Ошибка при обновлении заказов: {ex.Message}");
-                }
-            }
-        }
-
-        // Обновляем оставшиеся заказы в базе
-        using (var context = new maratpractic7Entities3())
-        {
-            foreach (var order in purchaseOrders)
-            {
-                var dbOrder = context.SupplyOrders.FirstOrDefault(so => so.Id == order.OrderId);
-                if (dbOrder != null)
-                {
-                    dbOrder.CarsUntilDelivery = order.CarsUntilDelivery;
-                }
-            }
-
-            try
-            {
-                context.SaveChanges();
-            }
-            catch (Exception ex)
-            {
-                Console.WriteLine($"Ошибка при обновлении заказов: {ex.Message}");
             }
         }
     }
@@ -251,7 +195,7 @@ class AutoServiceGame
     {
         Console.WriteLine($"\nБаланс: {money:C}");
         Console.WriteLine($"Обслужено автомобилей: {totalCarsProcessed}");
-        Console.WriteLine("Склад:");
+        Console.WriteLine("Склад запчастей:");
 
         if (warehouse.Count == 0)
         {
@@ -270,144 +214,94 @@ class AutoServiceGame
 
     private Client CreateNewClient()
     {
-        var names = new[] { "Гуцалюк Александр Александрович(вип)", "Родионов Дензл Михалыч", "Абасов Абиль Джабасович", "Уляненко Никита Дэнисович", "Черный Михаил Джекович", "Шуриков Шурик Шурикович", "Федотов Русик Валерьевич" };
-        var carModels = new[] { "Самолет", "Коррабль", "Шевроле Камаро", "Гелик", "ВАЗ 2106 m5 f90", "тук-тук", "Hyundai porter" };
-
+        // Автоматически генерируем случайный автомобиль
         var client = new Client
         {
-            Name = names[random.Next(names.Length)],
+            CarBrand = carBrands[random.Next(carBrands.Length)],
             CarModel = carModels[random.Next(carModels.Length)],
             CreatedDate = DateTime.Now
         };
 
-        // Сохраняем клиента в базу
-        using (var context = new maratpractic7Entities3())
-        {
-            var dbClient = new Clients
-            {
-                Name = client.Name,
-                CarModel = client.CarModel,
-                CreatedDate = client.CreatedDate
-            };
-            context.Clients.Add(dbClient);
-            context.SaveChanges();
-            client.Id = dbClient.Id;
-        }
-
         return client;
     }
 
-    private SparePart GetRandomSparePart()
+    private Parts GetRandomSparePart()
     {
-        using (var context = new maratpractic7Entities3())
-        {
-            var parts = context.SpareParts.ToList();
+        var context = Core.Context;
+        var parts = context.Parts.ToList();
 
-            if (parts.Count > 0)
-            {
-                var part = parts[random.Next(parts.Count)];
-                return new SparePart
-                {
-                    Id = part.Id,
-                    Name = part.Name,
-                    PurchasePrice = part.PurchasePrice,
-                    SellPrice = part.SellPrice
-                };
-            }
+        if (parts.Count > 0)
+        {
+            return parts[random.Next(parts.Count)];
         }
-        throw new Exception("В базе данных нет запчастей");
+        // Fallback если нет деталей в БД
+        return new Parts { ID = 5, Name = "бампер", Price = 1200 };
     }
 
-    private void AcceptOrder(Client client, SparePart brokenPart, decimal repairCost, bool hasPart)
+    private decimal CalculateRepairCost(Parts part)
     {
-        var profit = 0m;
-        var status = 3; // в процессе
+        // Стоимость ремонта = цена детали + работа (1000-3000 руб)
+        return part.Price + random.Next(1000, 3001);
+    }
 
+    private void AcceptOrder(Client client, Parts brokenPart, decimal repairCost, bool hasPart)
+    {
         if (hasPart)
         {
             // Успешный ремонт
             warehouse[brokenPart.Name]--;
-            profit = repairCost - brokenPart.PurchasePrice;
-            money += profit;
+            money += repairCost;
 
-            status = 1; // успех
-            Console.WriteLine($" Успешный ремонт! Прибыль: {profit:C}");
+            UpdateStockInDb(brokenPart.Name, warehouse[brokenPart.Name]);
+            SaveGameState();
+
+            Console.WriteLine($"\n✓ Успешный ремонт! Прибыль: {repairCost:C}");
+            Console.WriteLine($"Деталь '{brokenPart.Name}' использована со склада");
+            Console.WriteLine($"Автомобиль {client.CarBrand} {client.CarModel} отремонтирован!");
         }
         else
         {
-            Console.WriteLine("Нужной детали нет на складе! Производится замена случайной деталью...");
+            Console.WriteLine("\n✗ Нужной детали нет на складе!");
 
             var availableParts = warehouse.Where(p => p.Value > 0).ToList();
             if (availableParts.Count > 0)
             {
+                Console.WriteLine("Производится замена случайной деталью...");
+
                 var randomPart = availableParts[random.Next(availableParts.Count)];
                 warehouse[randomPart.Key]--;
 
-                var penalty = repairCost * 1.5m; // Штраф 150%
+                var penalty = repairCost + 5000; // Штраф 5000 руб
                 money -= penalty;
-                profit = -penalty;
 
-                status = 2; // ошибка
+                UpdateStockInDb(randomPart.Key, warehouse[randomPart.Key]);
+                SaveGameState();
 
                 Console.WriteLine($"Клиент недоволен! Вы поставили {randomPart.Key} вместо {brokenPart.Name}");
                 Console.WriteLine($"Штраф: {penalty:C}");
+                Console.WriteLine($"Автомобиль {client.CarBrand} {client.CarModel} - клиент недоволен!");
             }
             else
             {
-                var penalty = repairCost * 2m; // Штраф 200%
+                var penalty = repairCost + 10000; // Большой штраф
                 money -= penalty;
-                profit = -penalty;
+                SaveGameState();
 
-                status = 2; // ошибка
-
-                Console.WriteLine($"На складе нет деталей. Штраф: {penalty:C} 2 недели");
+                Console.WriteLine($"На складе нет деталей для замены!");
+                Console.WriteLine($"Штраф за простой: {penalty:C}");
+                Console.WriteLine($"Автомобиль {client.CarBrand} {client.CarModel} - ремонт невозможен!");
             }
         }
-
-        // Сохраняем заказ на ремонт
-        using (var context = new maratpractic7Entities3())
-        {
-            var repairOrder = new RepairOrders
-            {
-                ClientId = client.Id,
-                BrokenPartId = brokenPart.Id,
-                Status = status,
-                Profit = profit,
-                CreatedDate = DateTime.Now,
-                CompletedDate = status != 3 ? DateTime.Now : (DateTime?)null
-            };
-            context.RepairOrders.Add(repairOrder);
-            context.SaveChanges();
-        }
-
-        // Обновляем склад в базе
-        UpdateWarehouseInDatabase();
-        SaveGameState();
     }
 
-    private void RefuseOrder(Client client, SparePart brokenPart, decimal repairCost)
+    private void RefuseOrder(Client client)
     {
-        var penalty = repairCost * 0.2m; // Штраф 20%
-        money -= penalty;
-
-        // Сохраняем заказ на ремонт
-        using (var context = new maratpractic7Entities3())
-        {
-            var repairOrder = new RepairOrders
-            {
-                ClientId = client.Id,
-                BrokenPartId = brokenPart.Id,
-                Status = 0, // отказ
-                Profit = -penalty,
-                CreatedDate = DateTime.Now,
-                CompletedDate = DateTime.Now
-            };
-            context.RepairOrders.Add(repairOrder);
-            context.SaveChanges();
-        }
-
+        int fine = 3000;
+        money -= fine;
         SaveGameState();
-        Console.WriteLine($"Вы отказали клиенту. Штраф: {penalty:C}");
+
+        Console.WriteLine($"\n✗ Вы отказали клиенту с автомобилем {client.CarBrand} {client.CarModel}");
+        Console.WriteLine($"Штраф: {fine:C}");
     }
 
     private void ShowPurchaseMenu()
@@ -419,12 +313,12 @@ class AutoServiceGame
             Console.WriteLine($"Баланс: {money:C}");
             Console.WriteLine("\nДоступные запчасти:");
 
-            var parts = GetAvailableSpareParts();
+            var parts = GetAvailableParts();
             int i = 1;
             foreach (var part in parts)
             {
                 var currentStock = warehouse.ContainsKey(part.Name) ? warehouse[part.Name] : 0;
-                Console.WriteLine($"{i} - {part.Name}: {part.PurchasePrice:C}/шт. (на складе: {currentStock} шт.)");
+                Console.WriteLine($"{i} - {part.Name}: {part.Price:C}/шт. (на складе: {currentStock} шт.)");
                 i++;
             }
             Console.WriteLine($"{i} - Вернуться к клиенту");
@@ -444,15 +338,15 @@ class AutoServiceGame
 
                     if (int.TryParse(Console.ReadLine(), out int quantity) && quantity > 0)
                     {
-                        decimal totalCost = selectedPart.PurchasePrice * quantity;
+                        decimal totalCost = selectedPart.Price * quantity;
 
                         if (totalCost <= money)
                         {
                             money -= totalCost;
                             CreateSupplyOrder(selectedPart, quantity);
                             SaveGameState();
-                            Console.WriteLine($"Заказ на {quantity} {selectedPart.Name} оформлен! Доставка через 2 клиента.");
-                            Console.WriteLine($"Списано: {totalCost:C}");
+                            Console.WriteLine($"\n✓ Заказ на {quantity} {selectedPart.Name} оформлен!");
+                            Console.WriteLine($"Доставка через 2 дня. Списано: {totalCost:C}");
                         }
                         else
                         {
@@ -479,60 +373,22 @@ class AutoServiceGame
         }
     }
 
-    private List<SparePart> GetAvailableSpareParts()
+    private List<Parts> GetAvailableParts()
     {
-        var parts = new List<SparePart>();
-        using (var context = new maratpractic7Entities3())
-        {
-            var dbParts = context.SpareParts.ToList();
-            foreach (var dbPart in dbParts)
-            {
-                parts.Add(new SparePart
-                {
-                    Id = dbPart.Id,
-                    Name = dbPart.Name,
-                    PurchasePrice = dbPart.PurchasePrice,
-                    SellPrice = dbPart.SellPrice
-                });
-            }
-        }
-        return parts;
+        var context = Core.Context;
+        return context.Parts.ToList();
     }
 
-    private void CreateSupplyOrder(SparePart part, int quantity)
+    private void CreateSupplyOrder(Parts part, int quantity)
     {
-        using (var context = new maratpractic7Entities3())
-        {
-            // Создаем заказ на поставку
-            var supplyOrder = new SupplyOrders
-            {
-                TotalCost = part.PurchasePrice * quantity,
-                CarsUntilDelivery = 2,
-                CreatedDate = DateTime.Now,
-                IsDelivered = false
-            };
-            context.SupplyOrders.Add(supplyOrder);
-            context.SaveChanges();
-
-            // Добавляем позиции заказа
-            var orderItem = new SupplyOrderItems
-            {
-                SupplyOrderId = supplyOrder.Id,
-                SparePartId = part.Id,
-                Quantity = quantity
-            };
-            context.SupplyOrderItems.Add(orderItem);
-            context.SaveChanges();
-
-            // Добавляем в локальный список
-            purchaseOrders.Add(new PurchaseOrder(supplyOrder.Id, part.Name, quantity, 2));
-        }
+        // Добавляем в локальный список заказов (доставка через 2 дня)
+        purchaseOrders.Add(new PurchaseOrder(part.Name, quantity, 2));
     }
 
     private void ShowWarehouse()
     {
         Console.Clear();
-        Console.WriteLine("=== СКЛАД ===");
+        Console.WriteLine("=== СКЛАД ЗАПЧАСТЕЙ ===");
 
         if (warehouse.Count == 0)
         {
@@ -549,40 +405,6 @@ class AutoServiceGame
         ShowPendingOrders();
     }
 
-    private void ShowStatistics()
-    {
-        Console.Clear();
-        Console.WriteLine("=== СТАТИСТИКА ===");
-
-        using (var context = new maratpractic7Entities3())
-        {
-            // Статистика по заказам
-            var stats = context.RepairOrders
-                .GroupBy(r => 1)
-                .Select(g => new
-                {
-                    TotalOrders = g.Count(),
-                    Successful = g.Count(r => r.Status == 1),
-                    Failed = g.Count(r => r.Status == 2),
-                    Refused = g.Count(r => r.Status == 0),
-                    TotalProfit = g.Sum(r => r.Profit)
-                })
-                .FirstOrDefault();
-
-            if (stats != null)
-            {
-                Console.WriteLine($"Всего заказов: {stats.TotalOrders}");
-                Console.WriteLine($"Успешных ремонтов: {stats.Successful}");
-                Console.WriteLine($"Неудачных ремонтов: {stats.Failed}");
-                Console.WriteLine($"Отказов: {stats.Refused}");
-                Console.WriteLine($"Общая прибыль: {stats.TotalProfit:C}");
-            }
-
-            Console.WriteLine($"\nТекущий баланс: {money:C}");
-            Console.WriteLine($"Обслужено автомобилей: {totalCarsProcessed}");
-        }
-    }
-
     private void ShowPendingOrders()
     {
         if (purchaseOrders.Count > 0)
@@ -590,133 +412,109 @@ class AutoServiceGame
             Console.WriteLine("\nОжидаются поставки:");
             foreach (var order in purchaseOrders)
             {
-                Console.WriteLine($"  {order.PartName}: {order.Quantity} шт. (через {order.CarsUntilDelivery} клиентов)");
+                Console.WriteLine($"  {order.PartName}: {order.Quantity} шт. (через {order.DaysUntilDelivery} дней)");
             }
         }
     }
 
     private void SaveGameState()
     {
-        using (var context = new maratpractic7Entities3())
+        var context = Core.Context;
+        var warehouseData = context.WareHouse.FirstOrDefault(w => w.Id == currentWarehouseId);
+        if (warehouseData != null)
         {
-            var gameState = context.GameState.FirstOrDefault(g => g.Id == 1);
-            if (gameState != null)
-            {
-                gameState.Balance = money;
-                gameState.TotalCarsProcessed = totalCarsProcessed;
-                gameState.LastUpdated = DateTime.Now;
-                context.SaveChanges();
-            }
-
-            // Обновляем склад в базе
-            UpdateWarehouseInDatabase();
+            warehouseData.BBalance = money;
+            context.SaveChanges();
         }
+
+        // Обновляем склад в базе
+        UpdateWarehouseInDatabase();
     }
 
     private void UpdateWarehouseInDatabase()
     {
-        using (var context = new maratpractic7Entities3())
+        var context = Core.Context;
+        foreach (var partEntry in warehouse)
         {
-            foreach (var part in warehouse)
+            var part = context.Parts.FirstOrDefault(p => p.Name == partEntry.Key);
+            if (part != null)
             {
-                var partId = GetSparePartId(part.Key);
-                var warehouseItem = context.Warehouse.FirstOrDefault(w => w.SparePartId == partId);
+                var warehousePart = context.WarehouseParts
+                    .FirstOrDefault(wp => wp.WarehouseID == currentWarehouseId && wp.PartsID == part.ID);
 
-                if (warehouseItem != null)
+                if (warehousePart != null)
                 {
-                    warehouseItem.Quantity = part.Value;
-                    warehouseItem.LastUpdated = DateTime.Now;
+                    warehousePart.Count = partEntry.Value;
                 }
                 else
                 {
-                    context.Warehouse.Add(new Warehouse
+                    context.WarehouseParts.Add(new WarehouseParts
                     {
-                        SparePartId = partId,
-                        Quantity = part.Value,
-                        LastUpdated = DateTime.Now
+                        WarehouseID = currentWarehouseId,
+                        PartsID = part.ID,
+                        Count = partEntry.Value
                     });
                 }
+            }
+        }
+        context.SaveChanges();
+    }
+
+    private void UpdateStockInDb(string partName, int amount)
+    {
+        var context = Core.Context;
+        var part = context.Parts.FirstOrDefault(p => p.Name == partName);
+        if (part != null)
+        {
+            var warehousePart = context.WarehouseParts
+                .FirstOrDefault(wp => wp.WarehouseID == currentWarehouseId && wp.PartsID == part.ID);
+
+            if (warehousePart != null)
+            {
+                warehousePart.Count = amount;
+            }
+            else
+            {
+                context.WarehouseParts.Add(new WarehouseParts
+                {
+                    WarehouseID = currentWarehouseId,
+                    PartsID = part.ID,
+                    Count = amount
+                });
             }
             context.SaveChanges();
         }
     }
 
-    private void UpdateStockInDb(string partName, int amount)
+    private void GameOver()
     {
-        using (var context = new maratpractic7Entities3())
-        {
-            var partId = GetSparePartId(partName);
-            var warehouseItem = context.Warehouse.FirstOrDefault(w => w.SparePartId == partId);
-
-            if (warehouseItem != null)
-            {
-                warehouseItem.Quantity = amount;
-                warehouseItem.LastUpdated = DateTime.Now;
-            }
-            else
-            {
-                context.Warehouse.Add(new Warehouse
-                {
-                    SparePartId = partId,
-                    Quantity = amount,
-                    LastUpdated = DateTime.Now
-                });
-            }
-
-            try
-            {
-                context.SaveChanges();
-            }
-            catch (Exception ex)
-            {
-                Console.WriteLine($"Ошибка при обновлении склада: {ex.Message}");
-            }
-        }
-    }
-
-    private int GetSparePartId(string partName)
-    {
-        using (var context = new maratpractic7Entities3())
-        {
-            var part = context.SpareParts.FirstOrDefault(sp => sp.Name == partName);
-            return part?.Id ?? 0;
-        }
+        Console.Clear();
+        Console.WriteLine("=== ИГРА ОКОНЧЕНА ===");
+        Console.WriteLine($"Ваш баланс: {money:C}");
+        Console.WriteLine($"Всего обслужено автомобилей: {totalCarsProcessed}");
+        Console.WriteLine("\nСпасибо за игру!");
+        Console.WriteLine("Нажмите любую клавишу для выхода...");
+        Console.ReadKey();
+        Environment.Exit(0);
     }
 }
 
-// Классы для хранения данных
+// Вспомогательные классы
 class PurchaseOrder
 {
-    public int OrderId { get; set; }
     public string PartName { get; set; }
     public int Quantity { get; set; }
-    public int CarsUntilDelivery { get; set; }
+    public int DaysUntilDelivery { get; set; }
 
-    public PurchaseOrder(int orderId, string partName, int quantity, int carsUntilDelivery)
+    public PurchaseOrder(string partName, int quantity, int daysUntilDelivery)
     {
-        OrderId = orderId;
         PartName = partName;
         Quantity = quantity;
-        CarsUntilDelivery = carsUntilDelivery;
+        DaysUntilDelivery = daysUntilDelivery;
     }
 }
 
-class Client
-{
-    public int Id { get; set; }
-    public string Name { get; set; }
-    public string CarModel { get; set; }
-    public DateTime CreatedDate { get; set; }
-}
-
-class SparePart
-{
-    public int Id { get; set; }
-    public string Name { get; set; }
-    public decimal PurchasePrice { get; set; }
-    public decimal SellPrice { get; set; }
-}
-
+// Точка входа
 class Program
 {
     static void Main(string[] args)
@@ -724,14 +522,15 @@ class Program
         try
         {
             Console.OutputEncoding = System.Text.Encoding.UTF8;
-            Console.WriteLine("Добро пожаловать в автосервис!");
+            Console.WriteLine("Добро пожаловать в автосервис GMWOG!");
+
             AutoServiceGame game = new AutoServiceGame();
             game.RunGame();
         }
         catch (Exception ex)
         {
             Console.WriteLine($"Ошибка: {ex.Message}");
-            Console.WriteLine("Проверьте подключение к базе данных и наличие начальных данных");
+            Console.WriteLine("Проверьте подключение к базе данных");
             Console.WriteLine("Нажмите любую клавишу для выхода...");
             Console.ReadKey();
         }

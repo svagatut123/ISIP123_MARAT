@@ -4,66 +4,14 @@
   <edmx:Runtime>
     <!-- SSDL content -->
     <edmx:StorageModels>
-      <Schema Namespace="Хранилище Maratpractic7Model" Provider="System.Data.SqlClient" ProviderManifestToken="2012" Alias="Self" xmlns:store="http://schemas.microsoft.com/ado/2007/12/edm/EntityStoreSchemaGenerator" xmlns:customannotation="http://schemas.microsoft.com/ado/2013/11/edm/customannotation" xmlns="http://schemas.microsoft.com/ado/2009/11/edm/ssdl">
-        <EntityType Name="Clients">
+      <Schema Namespace="Хранилище khddbrd7pracModel" Provider="System.Data.SqlClient" ProviderManifestToken="2012" Alias="Self" xmlns:store="http://schemas.microsoft.com/ado/2007/12/edm/EntityStoreSchemaGenerator" xmlns:customannotation="http://schemas.microsoft.com/ado/2013/11/edm/customannotation" xmlns="http://schemas.microsoft.com/ado/2009/11/edm/ssdl">
+        <EntityType Name="Parts">
           <Key>
-            <PropertyRef Name="Id" />
+            <PropertyRef Name="ID" />
           </Key>
-          <Property Name="Id" Type="int" StoreGeneratedPattern="Identity" Nullable="false" />
-          <Property Name="Name" Type="nvarchar" MaxLength="100" Nullable="false" />
-          <Property Name="CarModel" Type="nvarchar" MaxLength="100" Nullable="false" />
-          <Property Name="CreatedDate" Type="datetime2" Precision="7" />
-        </EntityType>
-        <EntityType Name="GameState">
-          <Key>
-            <PropertyRef Name="Id" />
-          </Key>
-          <Property Name="Id" Type="int" Nullable="false" />
-          <Property Name="Balance" Type="decimal" Precision="10" Scale="2" Nullable="false" />
-          <Property Name="TotalCarsProcessed" Type="int" Nullable="false" />
-          <Property Name="ServiceName" Type="nvarchar" MaxLength="100" Nullable="false" />
-          <Property Name="LastUpdated" Type="datetime2" Precision="7" />
-        </EntityType>
-        <EntityType Name="RepairOrders">
-          <Key>
-            <PropertyRef Name="Id" />
-          </Key>
-          <Property Name="Id" Type="int" StoreGeneratedPattern="Identity" Nullable="false" />
-          <Property Name="ClientId" Type="int" Nullable="false" />
-          <Property Name="BrokenPartId" Type="int" Nullable="false" />
-          <Property Name="Status" Type="int" Nullable="false" />
-          <Property Name="Profit" Type="decimal" Precision="10" Scale="2" Nullable="false" />
-          <Property Name="CreatedDate" Type="datetime2" Precision="7" />
-          <Property Name="CompletedDate" Type="datetime2" Precision="7" />
-        </EntityType>
-        <EntityType Name="SpareParts">
-          <Key>
-            <PropertyRef Name="Id" />
-          </Key>
-          <Property Name="Id" Type="int" StoreGeneratedPattern="Identity" Nullable="false" />
-          <Property Name="Name" Type="nvarchar" MaxLength="100" Nullable="false" />
-          <Property Name="PurchasePrice" Type="decimal" Precision="10" Scale="2" Nullable="false" />
-          <Property Name="SellPrice" Type="decimal" Precision="10" Scale="2" Nullable="false" />
-          <Property Name="CreatedDate" Type="datetime2" Precision="7" />
-        </EntityType>
-        <EntityType Name="SupplyOrderItems">
-          <Key>
-            <PropertyRef Name="Id" />
-          </Key>
-          <Property Name="Id" Type="int" StoreGeneratedPattern="Identity" Nullable="false" />
-          <Property Name="SupplyOrderId" Type="int" Nullable="false" />
-          <Property Name="SparePartId" Type="int" Nullable="false" />
-          <Property Name="Quantity" Type="int" Nullable="false" />
-        </EntityType>
-        <EntityType Name="SupplyOrders">
-          <Key>
-            <PropertyRef Name="Id" />
-          </Key>
-          <Property Name="Id" Type="int" StoreGeneratedPattern="Identity" Nullable="false" />
-          <Property Name="TotalCost" Type="decimal" Precision="10" Scale="2" Nullable="false" />
-          <Property Name="CarsUntilDelivery" Type="int" Nullable="false" />
-          <Property Name="CreatedDate" Type="datetime2" Precision="7" />
-          <Property Name="IsDelivered" Type="bit" Nullable="false" />
+          <Property Name="ID" Type="int" StoreGeneratedPattern="Identity" Nullable="false" />
+          <Property Name="Name" Type="nvarchar" MaxLength="50" Nullable="false" />
+          <Property Name="Price" Type="decimal" Precision="18" Scale="2" Nullable="false" />
         </EntityType>
         <EntityType Name="sysdiagrams">
           <Key>
@@ -75,178 +23,73 @@
           <Property Name="version" Type="int" />
           <Property Name="definition" Type="varbinary(max)" />
         </EntityType>
-        <EntityType Name="Warehouse">
+        <EntityType Name="WareHouse">
           <Key>
             <PropertyRef Name="Id" />
           </Key>
           <Property Name="Id" Type="int" StoreGeneratedPattern="Identity" Nullable="false" />
-          <Property Name="SparePartId" Type="int" Nullable="false" />
-          <Property Name="Quantity" Type="int" Nullable="false" />
-          <Property Name="LastUpdated" Type="datetime2" Precision="7" />
+          <Property Name="BBalance" Type="decimal" Precision="18" Scale="2" Nullable="false" />
         </EntityType>
-        <Association Name="FK__RepairOrd__Broke__5441852A">
-          <End Role="SpareParts" Type="Self.SpareParts" Multiplicity="1" />
-          <End Role="RepairOrders" Type="Self.RepairOrders" Multiplicity="*" />
+        <EntityType Name="WarehouseParts">
+          <Key>
+            <PropertyRef Name="WarehouseID" />
+            <PropertyRef Name="PartsID" />
+          </Key>
+          <Property Name="WarehouseID" Type="int" Nullable="false" />
+          <Property Name="PartsID" Type="int" Nullable="false" />
+          <Property Name="Count" Type="int" Nullable="false" />
+        </EntityType>
+        <Association Name="FK_WarehouseParts_Parts">
+          <End Role="Parts" Type="Self.Parts" Multiplicity="1" />
+          <End Role="WarehouseParts" Type="Self.WarehouseParts" Multiplicity="*" />
           <ReferentialConstraint>
-            <Principal Role="SpareParts">
-              <PropertyRef Name="Id" />
+            <Principal Role="Parts">
+              <PropertyRef Name="ID" />
             </Principal>
-            <Dependent Role="RepairOrders">
-              <PropertyRef Name="BrokenPartId" />
+            <Dependent Role="WarehouseParts">
+              <PropertyRef Name="PartsID" />
             </Dependent>
           </ReferentialConstraint>
         </Association>
-        <Association Name="FK__RepairOrd__Clien__534D60F1">
-          <End Role="Clients" Type="Self.Clients" Multiplicity="1" />
-          <End Role="RepairOrders" Type="Self.RepairOrders" Multiplicity="*" />
+        <Association Name="FK_WarehouseParts_WareHouse">
+          <End Role="WareHouse" Type="Self.WareHouse" Multiplicity="1" />
+          <End Role="WarehouseParts" Type="Self.WarehouseParts" Multiplicity="*" />
           <ReferentialConstraint>
-            <Principal Role="Clients">
+            <Principal Role="WareHouse">
               <PropertyRef Name="Id" />
             </Principal>
-            <Dependent Role="RepairOrders">
-              <PropertyRef Name="ClientId" />
+            <Dependent Role="WarehouseParts">
+              <PropertyRef Name="WarehouseID" />
             </Dependent>
           </ReferentialConstraint>
         </Association>
-        <Association Name="FK__SupplyOrd__Spare__66603565">
-          <End Role="SpareParts" Type="Self.SpareParts" Multiplicity="1" />
-          <End Role="SupplyOrderItems" Type="Self.SupplyOrderItems" Multiplicity="*" />
-          <ReferentialConstraint>
-            <Principal Role="SpareParts">
-              <PropertyRef Name="Id" />
-            </Principal>
-            <Dependent Role="SupplyOrderItems">
-              <PropertyRef Name="SparePartId" />
-            </Dependent>
-          </ReferentialConstraint>
-        </Association>
-        <Association Name="FK__SupplyOrd__Suppl__656C112C">
-          <End Role="SupplyOrders" Type="Self.SupplyOrders" Multiplicity="1" />
-          <End Role="SupplyOrderItems" Type="Self.SupplyOrderItems" Multiplicity="*" />
-          <ReferentialConstraint>
-            <Principal Role="SupplyOrders">
-              <PropertyRef Name="Id" />
-            </Principal>
-            <Dependent Role="SupplyOrderItems">
-              <PropertyRef Name="SupplyOrderId" />
-            </Dependent>
-          </ReferentialConstraint>
-        </Association>
-        <Association Name="FK__Warehouse__Spare__59FA5E80">
-          <End Role="SpareParts" Type="Self.SpareParts" Multiplicity="1" />
-          <End Role="Warehouse" Type="Self.Warehouse" Multiplicity="*" />
-          <ReferentialConstraint>
-            <Principal Role="SpareParts">
-              <PropertyRef Name="Id" />
-            </Principal>
-            <Dependent Role="Warehouse">
-              <PropertyRef Name="SparePartId" />
-            </Dependent>
-          </ReferentialConstraint>
-        </Association>
-        <EntityContainer Name="Хранилище Maratpractic7ModelContainer">
-          <EntitySet Name="Clients" EntityType="Self.Clients" Schema="dbo" store:Type="Tables" />
-          <EntitySet Name="GameState" EntityType="Self.GameState" Schema="dbo" store:Type="Tables" />
-          <EntitySet Name="RepairOrders" EntityType="Self.RepairOrders" Schema="dbo" store:Type="Tables" />
-          <EntitySet Name="SpareParts" EntityType="Self.SpareParts" Schema="dbo" store:Type="Tables" />
-          <EntitySet Name="SupplyOrderItems" EntityType="Self.SupplyOrderItems" Schema="dbo" store:Type="Tables" />
-          <EntitySet Name="SupplyOrders" EntityType="Self.SupplyOrders" Schema="dbo" store:Type="Tables" />
+        <EntityContainer Name="Хранилище khddbrd7pracModelContainer">
+          <EntitySet Name="Parts" EntityType="Self.Parts" Schema="dbo" store:Type="Tables" />
           <EntitySet Name="sysdiagrams" EntityType="Self.sysdiagrams" Schema="dbo" store:Type="Tables" />
-          <EntitySet Name="Warehouse" EntityType="Self.Warehouse" Schema="dbo" store:Type="Tables" />
-          <AssociationSet Name="FK__RepairOrd__Broke__5441852A" Association="Self.FK__RepairOrd__Broke__5441852A">
-            <End Role="SpareParts" EntitySet="SpareParts" />
-            <End Role="RepairOrders" EntitySet="RepairOrders" />
+          <EntitySet Name="WareHouse" EntityType="Self.WareHouse" Schema="dbo" store:Type="Tables" />
+          <EntitySet Name="WarehouseParts" EntityType="Self.WarehouseParts" Schema="dbo" store:Type="Tables" />
+          <AssociationSet Name="FK_WarehouseParts_Parts" Association="Self.FK_WarehouseParts_Parts">
+            <End Role="Parts" EntitySet="Parts" />
+            <End Role="WarehouseParts" EntitySet="WarehouseParts" />
           </AssociationSet>
-          <AssociationSet Name="FK__RepairOrd__Clien__534D60F1" Association="Self.FK__RepairOrd__Clien__534D60F1">
-            <End Role="Clients" EntitySet="Clients" />
-            <End Role="RepairOrders" EntitySet="RepairOrders" />
-          </AssociationSet>
-          <AssociationSet Name="FK__SupplyOrd__Spare__66603565" Association="Self.FK__SupplyOrd__Spare__66603565">
-            <End Role="SpareParts" EntitySet="SpareParts" />
-            <End Role="SupplyOrderItems" EntitySet="SupplyOrderItems" />
-          </AssociationSet>
-          <AssociationSet Name="FK__SupplyOrd__Suppl__656C112C" Association="Self.FK__SupplyOrd__Suppl__656C112C">
-            <End Role="SupplyOrders" EntitySet="SupplyOrders" />
-            <End Role="SupplyOrderItems" EntitySet="SupplyOrderItems" />
-          </AssociationSet>
-          <AssociationSet Name="FK__Warehouse__Spare__59FA5E80" Association="Self.FK__Warehouse__Spare__59FA5E80">
-            <End Role="SpareParts" EntitySet="SpareParts" />
-            <End Role="Warehouse" EntitySet="Warehouse" />
+          <AssociationSet Name="FK_WarehouseParts_WareHouse" Association="Self.FK_WarehouseParts_WareHouse">
+            <End Role="WareHouse" EntitySet="WareHouse" />
+            <End Role="WarehouseParts" EntitySet="WarehouseParts" />
           </AssociationSet>
         </EntityContainer>
       </Schema>
     </edmx:StorageModels>
     <!-- CSDL content -->
     <edmx:ConceptualModels>
-      <Schema Namespace="Maratpractic7Model" Alias="Self" annotation:UseStrongSpatialTypes="false" xmlns:annotation="http://schemas.microsoft.com/ado/2009/02/edm/annotation" xmlns:customannotation="http://schemas.microsoft.com/ado/2013/11/edm/customannotation" xmlns="http://schemas.microsoft.com/ado/2009/11/edm">
-        <EntityType Name="Clients">
+      <Schema Namespace="khddbrd7pracModel" Alias="Self" annotation:UseStrongSpatialTypes="false" xmlns:annotation="http://schemas.microsoft.com/ado/2009/02/edm/annotation" xmlns:customannotation="http://schemas.microsoft.com/ado/2013/11/edm/customannotation" xmlns="http://schemas.microsoft.com/ado/2009/11/edm">
+        <EntityType Name="Parts">
           <Key>
-            <PropertyRef Name="Id" />
+            <PropertyRef Name="ID" />
           </Key>
-          <Property Name="Id" Type="Int32" Nullable="false" annotation:StoreGeneratedPattern="Identity" />
-          <Property Name="Name" Type="String" MaxLength="100" FixedLength="false" Unicode="true" Nullable="false" />
-          <Property Name="CarModel" Type="String" MaxLength="100" FixedLength="false" Unicode="true" Nullable="false" />
-          <Property Name="CreatedDate" Type="DateTime" Precision="7" />
-          <NavigationProperty Name="RepairOrders" Relationship="Self.FK__RepairOrd__Clien__534D60F1" FromRole="Clients" ToRole="RepairOrders" />
-        </EntityType>
-        <EntityType Name="GameState">
-          <Key>
-            <PropertyRef Name="Id" />
-          </Key>
-          <Property Name="Id" Type="Int32" Nullable="false" />
-          <Property Name="Balance" Type="Decimal" Precision="10" Scale="2" Nullable="false" />
-          <Property Name="TotalCarsProcessed" Type="Int32" Nullable="false" />
-          <Property Name="ServiceName" Type="String" MaxLength="100" FixedLength="false" Unicode="true" Nullable="false" />
-          <Property Name="LastUpdated" Type="DateTime" Precision="7" />
-        </EntityType>
-        <EntityType Name="RepairOrders">
-          <Key>
-            <PropertyRef Name="Id" />
-          </Key>
-          <Property Name="Id" Type="Int32" Nullable="false" annotation:StoreGeneratedPattern="Identity" />
-          <Property Name="ClientId" Type="Int32" Nullable="false" />
-          <Property Name="BrokenPartId" Type="Int32" Nullable="false" />
-          <Property Name="Status" Type="Int32" Nullable="false" />
-          <Property Name="Profit" Type="Decimal" Precision="10" Scale="2" Nullable="false" />
-          <Property Name="CreatedDate" Type="DateTime" Precision="7" />
-          <Property Name="CompletedDate" Type="DateTime" Precision="7" />
-          <NavigationProperty Name="Clients" Relationship="Self.FK__RepairOrd__Clien__534D60F1" FromRole="RepairOrders" ToRole="Clients" />
-          <NavigationProperty Name="SpareParts" Relationship="Self.FK__RepairOrd__Broke__5441852A" FromRole="RepairOrders" ToRole="SpareParts" />
-        </EntityType>
-        <EntityType Name="SpareParts">
-          <Key>
-            <PropertyRef Name="Id" />
-          </Key>
-          <Property Name="Id" Type="Int32" Nullable="false" annotation:StoreGeneratedPattern="Identity" />
-          <Property Name="Name" Type="String" MaxLength="100" FixedLength="false" Unicode="true" Nullable="false" />
-          <Property Name="PurchasePrice" Type="Decimal" Precision="10" Scale="2" Nullable="false" />
-          <Property Name="SellPrice" Type="Decimal" Precision="10" Scale="2" Nullable="false" />
-          <Property Name="CreatedDate" Type="DateTime" Precision="7" />
-          <NavigationProperty Name="RepairOrders" Relationship="Self.FK__RepairOrd__Broke__5441852A" FromRole="SpareParts" ToRole="RepairOrders" />
-          <NavigationProperty Name="SupplyOrderItems" Relationship="Self.FK__SupplyOrd__Spare__66603565" FromRole="SpareParts" ToRole="SupplyOrderItems" />
-          <NavigationProperty Name="Warehouse" Relationship="Self.FK__Warehouse__Spare__59FA5E80" FromRole="SpareParts" ToRole="Warehouse" />
-        </EntityType>
-        <EntityType Name="SupplyOrderItems">
-          <Key>
-            <PropertyRef Name="Id" />
-          </Key>
-          <Property Name="Id" Type="Int32" Nullable="false" annotation:StoreGeneratedPattern="Identity" />
-          <Property Name="SupplyOrderId" Type="Int32" Nullable="false" />
-          <Property Name="SparePartId" Type="Int32" Nullable="false" />
-          <Property Name="Quantity" Type="Int32" Nullable="false" />
-          <NavigationProperty Name="SpareParts" Relationship="Self.FK__SupplyOrd__Spare__66603565" FromRole="SupplyOrderItems" ToRole="SpareParts" />
-          <NavigationProperty Name="SupplyOrders" Relationship="Self.FK__SupplyOrd__Suppl__656C112C" FromRole="SupplyOrderItems" ToRole="SupplyOrders" />
-        </EntityType>
-        <EntityType Name="SupplyOrders">
-          <Key>
-            <PropertyRef Name="Id" />
-          </Key>
-          <Property Name="Id" Type="Int32" Nullable="false" annotation:StoreGeneratedPattern="Identity" />
-          <Property Name="TotalCost" Type="Decimal" Precision="10" Scale="2" Nullable="false" />
-          <Property Name="CarsUntilDelivery" Type="Int32" Nullable="false" />
-          <Property Name="CreatedDate" Type="DateTime" Precision="7" />
-          <Property Name="IsDelivered" Type="Boolean" Nullable="false" />
-          <NavigationProperty Name="SupplyOrderItems" Relationship="Self.FK__SupplyOrd__Suppl__656C112C" FromRole="SupplyOrders" ToRole="SupplyOrderItems" />
+          <Property Name="ID" Type="Int32" Nullable="false" annotation:StoreGeneratedPattern="Identity" />
+          <Property Name="Name" Type="String" MaxLength="50" FixedLength="false" Unicode="true" Nullable="false" />
+          <Property Name="Price" Type="Decimal" Precision="18" Scale="2" Nullable="false" />
+          <NavigationProperty Name="WarehouseParts" Relationship="Self.FK_WarehouseParts_Parts" FromRole="Parts" ToRole="WarehouseParts" />
         </EntityType>
         <EntityType Name="sysdiagrams">
           <Key>
@@ -258,104 +101,61 @@
           <Property Name="version" Type="Int32" />
           <Property Name="definition" Type="Binary" MaxLength="Max" FixedLength="false" />
         </EntityType>
-        <EntityType Name="Warehouse">
+        <EntityType Name="WareHouse">
           <Key>
             <PropertyRef Name="Id" />
           </Key>
           <Property Name="Id" Type="Int32" Nullable="false" annotation:StoreGeneratedPattern="Identity" />
-          <Property Name="SparePartId" Type="Int32" Nullable="false" />
-          <Property Name="Quantity" Type="Int32" Nullable="false" />
-          <Property Name="LastUpdated" Type="DateTime" Precision="7" />
-          <NavigationProperty Name="SpareParts" Relationship="Self.FK__Warehouse__Spare__59FA5E80" FromRole="Warehouse" ToRole="SpareParts" />
+          <Property Name="BBalance" Type="Decimal" Precision="18" Scale="2" Nullable="false" />
+          <NavigationProperty Name="WarehouseParts" Relationship="Self.FK_WarehouseParts_WareHouse" FromRole="WareHouse" ToRole="WarehouseParts" />
         </EntityType>
-        <Association Name="FK__RepairOrd__Clien__534D60F1">
-          <End Role="Clients" Type="Self.Clients" Multiplicity="1" />
-          <End Role="RepairOrders" Type="Self.RepairOrders" Multiplicity="*" />
+        <EntityType Name="WarehouseParts">
+          <Key>
+            <PropertyRef Name="WarehouseID" />
+            <PropertyRef Name="PartsID" />
+          </Key>
+          <Property Name="WarehouseID" Type="Int32" Nullable="false" />
+          <Property Name="PartsID" Type="Int32" Nullable="false" />
+          <Property Name="Count" Type="Int32" Nullable="false" />
+          <NavigationProperty Name="Parts" Relationship="Self.FK_WarehouseParts_Parts" FromRole="WarehouseParts" ToRole="Parts" />
+          <NavigationProperty Name="WareHouse" Relationship="Self.FK_WarehouseParts_WareHouse" FromRole="WarehouseParts" ToRole="WareHouse" />
+        </EntityType>
+        <Association Name="FK_WarehouseParts_Parts">
+          <End Role="Parts" Type="Self.Parts" Multiplicity="1" />
+          <End Role="WarehouseParts" Type="Self.WarehouseParts" Multiplicity="*" />
           <ReferentialConstraint>
-            <Principal Role="Clients">
-              <PropertyRef Name="Id" />
+            <Principal Role="Parts">
+              <PropertyRef Name="ID" />
             </Principal>
-            <Dependent Role="RepairOrders">
-              <PropertyRef Name="ClientId" />
+            <Dependent Role="WarehouseParts">
+              <PropertyRef Name="PartsID" />
             </Dependent>
           </ReferentialConstraint>
         </Association>
-        <Association Name="FK__RepairOrd__Broke__5441852A">
-          <End Role="SpareParts" Type="Self.SpareParts" Multiplicity="1" />
-          <End Role="RepairOrders" Type="Self.RepairOrders" Multiplicity="*" />
+        <Association Name="FK_WarehouseParts_WareHouse">
+          <End Role="WareHouse" Type="Self.WareHouse" Multiplicity="1" />
+          <End Role="WarehouseParts" Type="Self.WarehouseParts" Multiplicity="*" />
           <ReferentialConstraint>
-            <Principal Role="SpareParts">
+            <Principal Role="WareHouse">
               <PropertyRef Name="Id" />
             </Principal>
-            <Dependent Role="RepairOrders">
-              <PropertyRef Name="BrokenPartId" />
+            <Dependent Role="WarehouseParts">
+              <PropertyRef Name="WarehouseID" />
             </Dependent>
           </ReferentialConstraint>
         </Association>
-        <Association Name="FK__SupplyOrd__Spare__66603565">
-          <End Role="SpareParts" Type="Self.SpareParts" Multiplicity="1" />
-          <End Role="SupplyOrderItems" Type="Self.SupplyOrderItems" Multiplicity="*" />
-          <ReferentialConstraint>
-            <Principal Role="SpareParts">
-              <PropertyRef Name="Id" />
-            </Principal>
-            <Dependent Role="SupplyOrderItems">
-              <PropertyRef Name="SparePartId" />
-            </Dependent>
-          </ReferentialConstraint>
-        </Association>
-        <Association Name="FK__Warehouse__Spare__59FA5E80">
-          <End Role="SpareParts" Type="Self.SpareParts" Multiplicity="1" />
-          <End Role="Warehouse" Type="Self.Warehouse" Multiplicity="*" />
-          <ReferentialConstraint>
-            <Principal Role="SpareParts">
-              <PropertyRef Name="Id" />
-            </Principal>
-            <Dependent Role="Warehouse">
-              <PropertyRef Name="SparePartId" />
-            </Dependent>
-          </ReferentialConstraint>
-        </Association>
-        <Association Name="FK__SupplyOrd__Suppl__656C112C">
-          <End Role="SupplyOrders" Type="Self.SupplyOrders" Multiplicity="1" />
-          <End Role="SupplyOrderItems" Type="Self.SupplyOrderItems" Multiplicity="*" />
-          <ReferentialConstraint>
-            <Principal Role="SupplyOrders">
-              <PropertyRef Name="Id" />
-            </Principal>
-            <Dependent Role="SupplyOrderItems">
-              <PropertyRef Name="SupplyOrderId" />
-            </Dependent>
-          </ReferentialConstraint>
-        </Association>
-        <EntityContainer Name="maratpractic7Entities4" annotation:LazyLoadingEnabled="true">
-          <EntitySet Name="Clients" EntityType="Self.Clients" />
-          <EntitySet Name="GameState" EntityType="Self.GameState" />
-          <EntitySet Name="RepairOrders" EntityType="Self.RepairOrders" />
-          <EntitySet Name="SpareParts" EntityType="Self.SpareParts" />
-          <EntitySet Name="SupplyOrderItems" EntityType="Self.SupplyOrderItems" />
-          <EntitySet Name="SupplyOrders" EntityType="Self.SupplyOrders" />
+        <EntityContainer Name="khddbrd7pracEntities4" annotation:LazyLoadingEnabled="true">
+          <EntitySet Name="Parts" EntityType="Self.Parts" />
           <EntitySet Name="sysdiagrams" EntityType="Self.sysdiagrams" />
-          <EntitySet Name="Warehouse" EntityType="Self.Warehouse" />
-          <AssociationSet Name="FK__RepairOrd__Clien__534D60F1" Association="Self.FK__RepairOrd__Clien__534D60F1">
-            <End Role="Clients" EntitySet="Clients" />
-            <End Role="RepairOrders" EntitySet="RepairOrders" />
+          <EntitySet Name="WareHouse" EntityType="Self.WareHouse" />
+          <EntitySet Name="WarehouseParts" EntityType="Self.WarehouseParts" />
+          <AssociationSet Name="FK_WarehouseParts_Parts" Association="Self.FK_WarehouseParts_Parts">
+            <End Role="Parts" EntitySet="Parts" />
+            <End Role="WarehouseParts" EntitySet="WarehouseParts" />
           </AssociationSet>
-          <AssociationSet Name="FK__RepairOrd__Broke__5441852A" Association="Self.FK__RepairOrd__Broke__5441852A">
-            <End Role="SpareParts" EntitySet="SpareParts" />
-            <End Role="RepairOrders" EntitySet="RepairOrders" />
-          </AssociationSet>
-          <AssociationSet Name="FK__SupplyOrd__Spare__66603565" Association="Self.FK__SupplyOrd__Spare__66603565">
-            <End Role="SpareParts" EntitySet="SpareParts" />
-            <End Role="SupplyOrderItems" EntitySet="SupplyOrderItems" />
-          </AssociationSet>
-          <AssociationSet Name="FK__Warehouse__Spare__59FA5E80" Association="Self.FK__Warehouse__Spare__59FA5E80">
-            <End Role="SpareParts" EntitySet="SpareParts" />
-            <End Role="Warehouse" EntitySet="Warehouse" />
-          </AssociationSet>
-          <AssociationSet Name="FK__SupplyOrd__Suppl__656C112C" Association="Self.FK__SupplyOrd__Suppl__656C112C">
-            <End Role="SupplyOrders" EntitySet="SupplyOrders" />
-            <End Role="SupplyOrderItems" EntitySet="SupplyOrderItems" />
+          <AssociationSet Name="FK_WarehouseParts_WareHouse" Association="Self.FK_WarehouseParts_WareHouse">
+            <End Role="WareHouse" EntitySet="WareHouse" />
+            <End Role="WarehouseParts" EntitySet="WarehouseParts" />
           </AssociationSet>
         </EntityContainer>
       </Schema>
@@ -363,75 +163,18 @@
     <!-- C-S mapping content -->
     <edmx:Mappings>
       <Mapping Space="C-S" xmlns="http://schemas.microsoft.com/ado/2009/11/mapping/cs">
-        <EntityContainerMapping StorageEntityContainer="Хранилище Maratpractic7ModelContainer" CdmEntityContainer="maratpractic7Entities4">
-          <EntitySetMapping Name="Clients">
-            <EntityTypeMapping TypeName="Maratpractic7Model.Clients">
-              <MappingFragment StoreEntitySet="Clients">
-                <ScalarProperty Name="Id" ColumnName="Id" />
+        <EntityContainerMapping StorageEntityContainer="Хранилище khddbrd7pracModelContainer" CdmEntityContainer="khddbrd7pracEntities4">
+          <EntitySetMapping Name="Parts">
+            <EntityTypeMapping TypeName="khddbrd7pracModel.Parts">
+              <MappingFragment StoreEntitySet="Parts">
+                <ScalarProperty Name="ID" ColumnName="ID" />
                 <ScalarProperty Name="Name" ColumnName="Name" />
-                <ScalarProperty Name="CarModel" ColumnName="CarModel" />
-                <ScalarProperty Name="CreatedDate" ColumnName="CreatedDate" />
-              </MappingFragment>
-            </EntityTypeMapping>
-          </EntitySetMapping>
-          <EntitySetMapping Name="GameState">
-            <EntityTypeMapping TypeName="Maratpractic7Model.GameState">
-              <MappingFragment StoreEntitySet="GameState">
-                <ScalarProperty Name="Id" ColumnName="Id" />
-                <ScalarProperty Name="Balance" ColumnName="Balance" />
-                <ScalarProperty Name="TotalCarsProcessed" ColumnName="TotalCarsProcessed" />
-                <ScalarProperty Name="ServiceName" ColumnName="ServiceName" />
-                <ScalarProperty Name="LastUpdated" ColumnName="LastUpdated" />
-              </MappingFragment>
-            </EntityTypeMapping>
-          </EntitySetMapping>
-          <EntitySetMapping Name="RepairOrders">
-            <EntityTypeMapping TypeName="Maratpractic7Model.RepairOrders">
-              <MappingFragment StoreEntitySet="RepairOrders">
-                <ScalarProperty Name="Id" ColumnName="Id" />
-                <ScalarProperty Name="ClientId" ColumnName="ClientId" />
-                <ScalarProperty Name="BrokenPartId" ColumnName="BrokenPartId" />
-                <ScalarProperty Name="Status" ColumnName="Status" />
-                <ScalarProperty Name="Profit" ColumnName="Profit" />
-                <ScalarProperty Name="CreatedDate" ColumnName="CreatedDate" />
-                <ScalarProperty Name="CompletedDate" ColumnName="CompletedDate" />
-              </MappingFragment>
-            </EntityTypeMapping>
-          </EntitySetMapping>
-          <EntitySetMapping Name="SpareParts">
-            <EntityTypeMapping TypeName="Maratpractic7Model.SpareParts">
-              <MappingFragment StoreEntitySet="SpareParts">
-                <ScalarProperty Name="Id" ColumnName="Id" />
-                <ScalarProperty Name="Name" ColumnName="Name" />
-                <ScalarProperty Name="PurchasePrice" ColumnName="PurchasePrice" />
-                <ScalarProperty Name="SellPrice" ColumnName="SellPrice" />
-                <ScalarProperty Name="CreatedDate" ColumnName="CreatedDate" />
-              </MappingFragment>
-            </EntityTypeMapping>
-          </EntitySetMapping>
-          <EntitySetMapping Name="SupplyOrderItems">
-            <EntityTypeMapping TypeName="Maratpractic7Model.SupplyOrderItems">
-              <MappingFragment StoreEntitySet="SupplyOrderItems">
-                <ScalarProperty Name="Id" ColumnName="Id" />
-                <ScalarProperty Name="SupplyOrderId" ColumnName="SupplyOrderId" />
-                <ScalarProperty Name="SparePartId" ColumnName="SparePartId" />
-                <ScalarProperty Name="Quantity" ColumnName="Quantity" />
-              </MappingFragment>
-            </EntityTypeMapping>
-          </EntitySetMapping>
-          <EntitySetMapping Name="SupplyOrders">
-            <EntityTypeMapping TypeName="Maratpractic7Model.SupplyOrders">
-              <MappingFragment StoreEntitySet="SupplyOrders">
-                <ScalarProperty Name="Id" ColumnName="Id" />
-                <ScalarProperty Name="TotalCost" ColumnName="TotalCost" />
-                <ScalarProperty Name="CarsUntilDelivery" ColumnName="CarsUntilDelivery" />
-                <ScalarProperty Name="CreatedDate" ColumnName="CreatedDate" />
-                <ScalarProperty Name="IsDelivered" ColumnName="IsDelivered" />
+                <ScalarProperty Name="Price" ColumnName="Price" />
               </MappingFragment>
             </EntityTypeMapping>
           </EntitySetMapping>
           <EntitySetMapping Name="sysdiagrams">
-            <EntityTypeMapping TypeName="Maratpractic7Model.sysdiagrams">
+            <EntityTypeMapping TypeName="khddbrd7pracModel.sysdiagrams">
               <MappingFragment StoreEntitySet="sysdiagrams">
                 <ScalarProperty Name="name" ColumnName="name" />
                 <ScalarProperty Name="principal_id" ColumnName="principal_id" />
@@ -441,13 +184,20 @@
               </MappingFragment>
             </EntityTypeMapping>
           </EntitySetMapping>
-          <EntitySetMapping Name="Warehouse">
-            <EntityTypeMapping TypeName="Maratpractic7Model.Warehouse">
-              <MappingFragment StoreEntitySet="Warehouse">
+          <EntitySetMapping Name="WareHouse">
+            <EntityTypeMapping TypeName="khddbrd7pracModel.WareHouse">
+              <MappingFragment StoreEntitySet="WareHouse">
                 <ScalarProperty Name="Id" ColumnName="Id" />
-                <ScalarProperty Name="SparePartId" ColumnName="SparePartId" />
-                <ScalarProperty Name="Quantity" ColumnName="Quantity" />
-                <ScalarProperty Name="LastUpdated" ColumnName="LastUpdated" />
+                <ScalarProperty Name="BBalance" ColumnName="BBalance" />
+              </MappingFragment>
+            </EntityTypeMapping>
+          </EntitySetMapping>
+          <EntitySetMapping Name="WarehouseParts">
+            <EntityTypeMapping TypeName="khddbrd7pracModel.WarehouseParts">
+              <MappingFragment StoreEntitySet="WarehouseParts">
+                <ScalarProperty Name="WarehouseID" ColumnName="WarehouseID" />
+                <ScalarProperty Name="PartsID" ColumnName="PartsID" />
+                <ScalarProperty Name="Count" ColumnName="Count" />
               </MappingFragment>
             </EntityTypeMapping>
           </EntitySetMapping>

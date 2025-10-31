@@ -13,10 +13,10 @@ namespace prac7
     using System.Data.Entity;
     using System.Data.Entity.Infrastructure;
     
-    public partial class maratpractic7Entities4 : DbContext
+    public partial class khddbrd7pracEntities4 : DbContext
     {
-        public maratpractic7Entities4()
-            : base("name=maratpractic7Entities4")
+        public khddbrd7pracEntities4()
+            : base("name=khddbrd7pracEntities4")
         {
         }
     
@@ -25,13 +25,9 @@ namespace prac7
             throw new UnintentionalCodeFirstException();
         }
     
-        public virtual DbSet<Clients> Clients { get; set; }
-        public virtual DbSet<GameState> GameState { get; set; }
-        public virtual DbSet<RepairOrders> RepairOrders { get; set; }
-        public virtual DbSet<SpareParts> SpareParts { get; set; }
-        public virtual DbSet<SupplyOrderItems> SupplyOrderItems { get; set; }
-        public virtual DbSet<SupplyOrders> SupplyOrders { get; set; }
+        public virtual DbSet<Parts> Parts { get; set; }
         public virtual DbSet<sysdiagrams> sysdiagrams { get; set; }
-        public virtual DbSet<Warehouse> Warehouse { get; set; }
+        public virtual DbSet<WareHouse> WareHouse { get; set; }
+        public virtual DbSet<WarehouseParts> WarehouseParts { get; set; }
     }
 }

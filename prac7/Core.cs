@@ -10,6 +10,7 @@ namespace prac7
 
     public class Core
     {
-        public static maratpractic7Entities3 Context = new maratpractic7Entities3();
+        public static
+            khddbrd7pracEntities4 Context = new khddbrd7pracEntities4();
     }
 }
