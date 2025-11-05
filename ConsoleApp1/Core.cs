@@ -10,6 +10,6 @@ namespace ConsoleApp1
     public class Core
     {
         public static
-            khddbrd7pracEntities4 Context = new khddbrd7pracEntities4();
+            khddbrd7pracEntities3 Context = new khddbrd7pracEntities3();
     }
 }

@@ -1,11 +1,10 @@
-﻿using prac7;
+﻿using ConsoleApp1;
 using System;
 using System.Collections.Generic;
 using System.Linq;
 
 public class Client
 {
-    public string CarModel { get; set; }
     public string CarBrand { get; set; }
     public DateTime CreatedDate { get; set; }
 }
@@ -20,7 +19,6 @@ class AutoServiceGame
     private int currentWarehouseId = 1;
 
     private string[] carBrands = { "Toyota", "Honda", "Ford", "BMW", "Mercedes", "Audi", "Volkswagen" };
-    private string[] carModels = { "Camry", "Civic", "Focus", "X5", "C-Class", "A4", "Golf" };
 
     public AutoServiceGame()
     {
@@ -53,8 +51,7 @@ class AutoServiceGame
             warehouse[wp.Parts.Name] = wp.Count;
         }
 
-        Console.WriteLine("Автосервис инициализирован!");
-        Console.WriteLine($"Начальный баланс: {money:C}");
+        Console.WriteLine($"Начальный баланс: {money}");
     }
 
     public void RunGame()
@@ -81,13 +78,13 @@ class AutoServiceGame
             var repairCost = CalculateRepairCost(brokenPart);
             bool hasPart = warehouse.ContainsKey(brokenPart.Name) && warehouse[brokenPart.Name] > 0;
 
-            Console.WriteLine($"\nДанные клиента: {client.CarBrand} {client.CarModel}");
+            Console.WriteLine($"\nДанные клиента: {client.CarBrand}");
             Console.WriteLine($"Поломка: {brokenPart.Name}");
-            Console.WriteLine($"Стоимость ремонта: {repairCost:C}");
-            Console.WriteLine($"Наличие на складе: {(hasPart ? "✓ В наличии" : "✗ Нет в наличии")}");
+            Console.WriteLine($"Стоимость ремонта: {repairCost}");
+            Console.WriteLine($"Наличие на складе: {(hasPart ? "В наличии" : "Нет в наличии")}");
 
             Console.WriteLine("\n1 - Взять заказ");
-            Console.WriteLine("2 - Отказать клиенту (штраф 3000 руб.)");
+            Console.WriteLine("2 - Отказать клиенту (штраф 2000 руб.)");
             Console.WriteLine("3 - Закупить запчасти");
             Console.WriteLine("4 - Показать склад");
 
@@ -138,16 +135,16 @@ class AutoServiceGame
                 else
                     warehouse[order.PartName] = order.Quantity;
 
-                Console.WriteLine($"✓ Доставлены {order.Quantity} {order.PartName}");
+                Console.WriteLine($"Доставлены {order.Quantity} {order.PartName}");
                 purchaseOrders.Remove(order);
-                UpdateStockInDb(order.PartName, warehouse[order.PartName]);
+                // УДАЛЕНО: UpdateStockInDb(order.PartName, warehouse[order.PartName]);
             }
         }
     }
 
     private void ShowStatus()
     {
-        Console.WriteLine($"\nБаланс: {money:C}");
+        Console.WriteLine($"\nБаланс: {money}");
         Console.WriteLine($"Обслужено автомобилей: {totalCarsProcessed}");
         Console.WriteLine("Склад запчастей:");
 
@@ -163,7 +160,6 @@ class AutoServiceGame
     private Client CreateNewClient() => new Client
     {
         CarBrand = carBrands[random.Next(carBrands.Length)],
-        CarModel = carModels[random.Next(carModels.Length)],
         CreatedDate = DateTime.Now
     };
 
@@ -174,7 +170,10 @@ class AutoServiceGame
             new Parts { ID = 5, Name = "бампер", Price = 1200 };
     }
 
-    private decimal CalculateRepairCost(Parts part) => part.Price + random.Next(1000, 3001);
+    private decimal CalculateRepairCost(Parts part)
+    {
+        return part.Price + random.Next(1000, 2001);
+    }
 
     private void AcceptOrder(Client client, Parts brokenPart, decimal repairCost, bool hasPart)
     {
@@ -182,12 +181,11 @@ class AutoServiceGame
         {
             warehouse[brokenPart.Name]--;
             money += repairCost;
-            UpdateStockInDb(brokenPart.Name, warehouse[brokenPart.Name]);
-            Console.WriteLine($"✓ Успешный ремонт! Прибыль: {repairCost:C}");
+            Console.WriteLine($"Успешный ремонт! Прибыль: {repairCost}");
         }
         else
         {
-            Console.WriteLine("\n✗ Нужной детали нет на складе!");
+            Console.WriteLine("\nНужной детали нет на складе!");
             var availableParts = warehouse.Where(p => p.Value > 0).ToList();
 
             if (availableParts.Count > 0)
@@ -195,7 +193,6 @@ class AutoServiceGame
                 var randomPart = availableParts[random.Next(availableParts.Count)];
                 warehouse[randomPart.Key]--;
                 money -= repairCost + 5000;
-                UpdateStockInDb(randomPart.Key, warehouse[randomPart.Key]);
                 Console.WriteLine($"Клиент недоволен! Вы поставили {randomPart.Key} вместо {brokenPart.Name}");
             }
             else
@@ -209,9 +206,9 @@ class AutoServiceGame
 
     private void RefuseOrder(Client client)
     {
-        money -= 3000;
+        money -= 2000;
         SaveGameState();
-        Console.WriteLine($"\n✗ Вы отказали клиенту. Штраф: 3000:C");
+        Console.WriteLine($"\nВы отказали клиенту. Штраф: 2000");
     }
 
     private void ShowPurchaseMenu()
@@ -219,15 +216,15 @@ class AutoServiceGame
         while (true)
         {
             Console.Clear();
-            Console.WriteLine("=== ЗАКУПКА ЗАПЧАСТЕЙ ===");
-            Console.WriteLine($"Баланс: {money:C}\n");
+            Console.WriteLine("закупка запчастей");
+            Console.WriteLine($"баланс: {money}\n");
 
             var parts = Core.Context.Parts.ToList();
             int i = 1;
             foreach (var part in parts)
             {
                 var stock = warehouse.ContainsKey(part.Name) ? warehouse[part.Name] : 0;
-                Console.WriteLine($"{i} - {part.Name}: {part.Price:C}/шт. (на складе: {stock} шт.)");
+                Console.WriteLine($"{i} - {part.Name}: {part.Price}/шт. (на складе: {stock} шт.)");
                 i++;
             }
             Console.WriteLine($"{i} - Вернуться к клиенту");
@@ -236,7 +233,7 @@ class AutoServiceGame
             if (choice >= 1 && choice <= parts.Count)
             {
                 var part = parts[choice - 1];
-                Console.Write($"Сколько {part.Name} закупить? ");
+                Console.Write($"введите кол-во {part.Name} ");
 
                 if (int.TryParse(Console.ReadLine(), out int quantity) && quantity > 0)
                 {
@@ -246,13 +243,13 @@ class AutoServiceGame
                         money -= totalCost;
                         purchaseOrders.Add(new PurchaseOrder(part.Name, quantity, 2));
                         SaveGameState();
-                        Console.WriteLine($"✓ Заказ на {quantity} {part.Name} оформлен!");
+                        Console.WriteLine($"Заказ на {quantity} {part.Name} оформлен!");
                     }
-                    else Console.WriteLine("Недостаточно денег!");
+                    else Console.WriteLine("нет денег!");
                 }
-                else Console.WriteLine("Неверное количество!");
+                else Console.WriteLine("неверно");
             }
-            else Console.WriteLine("Неверный выбор!");
+            else Console.WriteLine("неверно");
 
             WaitForKey();
         }
@@ -281,67 +278,46 @@ class AutoServiceGame
     private void SaveGameState()
     {
         var context = Core.Context;
+
+        // Сохраняем баланс
         var warehouseData = context.WareHouse.FirstOrDefault(w => w.Id == currentWarehouseId);
         if (warehouseData != null)
         {
             warehouseData.BBalance = money;
-            context.SaveChanges();
         }
-        UpdateWarehouseInDatabase();
-    }
+        else
+        {
+            context.WareHouse.Add(new WareHouse { Id = currentWarehouseId, BBalance = money });
+        }
 
-    private void UpdateWarehouseInDatabase()
-    {
-        var context = Core.Context;
         foreach (var partEntry in warehouse)
         {
             var part = context.Parts.FirstOrDefault(p => p.Name == partEntry.Key);
-            if (part != null)
-            {
-                var warehousePart = context.WarehouseParts
-                    .FirstOrDefault(wp => wp.WarehouseID == currentWarehouseId && wp.PartsID == part.ID);
+            if (part == null) continue;
 
-                if (warehousePart != null)
-                    warehousePart.Count = partEntry.Value;
-                else
-                    context.WarehouseParts.Add(new WarehouseParts
-                    {
-                        WarehouseID = currentWarehouseId,
-                        PartsID = part.ID,
-                        Count = partEntry.Value
-                    });
-            }
-        }
-        context.SaveChanges();
-    }
-
-    private void UpdateStockInDb(string partName, int amount)
-    {
-        var context = Core.Context;
-        var part = context.Parts.FirstOrDefault(p => p.Name == partName);
-        if (part != null)
-        {
             var warehousePart = context.WarehouseParts
                 .FirstOrDefault(wp => wp.WarehouseID == currentWarehouseId && wp.PartsID == part.ID);
 
             if (warehousePart != null)
-                warehousePart.Count = amount;
+                warehousePart.Count = partEntry.Value;
             else
                 context.WarehouseParts.Add(new WarehouseParts
                 {
                     WarehouseID = currentWarehouseId,
                     PartsID = part.ID,
-                    Count = amount
+                    Count = partEntry.Value
                 });
-            context.SaveChanges();
         }
+
+        context.SaveChanges();
     }
+
 
     private void GameOver()
     {
         Console.Clear();
         Console.WriteLine("=== ИГРА ОКОНЧЕНА ===");
-        Console.WriteLine($"Ваш баланс: {money:C}");
+        Console.WriteLine($"Ваш баланс: {money}");
         Console.WriteLine($"Всего обслужено автомобилей: {totalCarsProcessed}");
         Console.WriteLine("\nСпасибо за игру!");
         WaitForKey();
