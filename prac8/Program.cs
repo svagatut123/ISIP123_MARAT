@@ -339,3 +339,202 @@ using prac8;
         Console.WriteLine($"Статус: {order.Status}");
     }
 
+    private void ShowCart(Users user)
+    {
+        Console.WriteLine("\n--- Корзина ---");
+
+        var cartItems = from c in Core.Context.Cart
+                        join p in Core.Context.Products on c.ProductId equals p.ProductId
+                        where c.UserId == user.UserId
+                        select new { Cart = c, Product = p };
+
+        // Явное преобразование в список и проверка
+        var cartItemsList = cartItems.ToList();
+        if (!cartItemsList.Any())
+        {
+            Console.WriteLine("Корзина пуста");
+            return;
+        }
+
+        decimal total = 0;
+
+        Console.WriteLine("Товары в корзине:");
+        foreach (var item in cartItemsList)
+        {
+            decimal itemTotal = item.Cart.Quantity * item.Product.Price;
+            total += itemTotal;
+
+            Console.WriteLine($"{item.Product.ProductName} x{item.Cart.Quantity} = {itemTotal} руб.");
+        }
+
+        Console.WriteLine($"\nИтого: {total} руб.");
+
+        Console.Write("\n1 - Оформить заказ\n2 - Удалить товар\n3 - Назад\nВаш выбор: ");
+        string choice = Console.ReadLine();
+
+        if (choice == "1")
+        {
+            CreateOrderFromCart(user);
+        }
+        else if (choice == "2")
+        {
+            RemoveFromCart(user);
+        }
+    }
+
+    private void RemoveFromCart(Users user)
+    {
+        Console.Write("ID товара для удаления: ");
+        if (!int.TryParse(Console.ReadLine(), out int productId))
+        {
+            Console.WriteLine("Ошибка ввода!");
+            return;
+        }
+
+        Cart item = Core.Context.Cart.FirstOrDefault(c => c.UserId == user.UserId && c.ProductId == productId);
+
+        if (item != null)
+        {
+            Core.Context.Cart.Remove(item);
+            Core.Context.SaveChanges();
+            Console.WriteLine("Товар удален из корзины!");
+        }
+        else
+        {
+            Console.WriteLine("Товар не найден в корзине!");
+        }
+    }
+
+    private void CreateOrderFromCart(Users user)
+    {
+        Console.WriteLine("\n--- Оформление заказа из корзины ---");
+
+        var cartItems = from c in Core.Context.Cart
+                        join p in Core.Context.Products on c.ProductId equals p.ProductId
+                        where c.UserId == user.UserId
+                        select new { Cart = c, Product = p };
+
+        // Явное преобразование и проверка
+        var cartItemsList = cartItems.ToList();
+        if (cartItemsList.Count == 0)
+        {
+            Console.WriteLine("Корзина пуста!");
+            return;
+        }
+
+        // Проверка наличия товаров
+        bool hasInsufficientStock = false;
+        foreach (var item in cartItemsList)
+        {
+            if (item.Cart.Quantity > item.Product.StockQuantity)
+            {
+                Console.WriteLine($"Недостаточно товара '{item.Product.ProductName}' на складе!");
+                hasInsufficientStock = true;
+            }
+        }
+
+        if (hasInsufficientStock)
+            return;
+
+        var points = Core.Context.PickupPoints.Where(p => p.IsActive == true).ToList();
+
+        if (points.Count == 0)
+        {
+            Console.WriteLine("Нет доступных пунктов выдачи!");
+            return;
+        }
+
+        Console.WriteLine("\nДоступные пункты выдачи:");
+        foreach (var point in points)
+        {
+            Console.WriteLine($"{point.PickupPointId}. {point.PointName} - {point.Address} ({point.PhoneNumber})");
+        }
+
+        Console.Write("Выберите пункт выдачи: ");
+        if (!int.TryParse(Console.ReadLine(), out int pointId))
+        {
+            Console.WriteLine("Ошибка ввода!");
+            return;
+        }
+
+        decimal total = cartItemsList.Sum(item => item.Cart.Quantity * item.Product.Price);
+
+        Orders order = new Orders
+        {
+            UserId = user.UserId,
+            PickupPointId = pointId,
+            OrderDate = DateTime.Now,
+            TotalAmount = total,
+            Status = "Pending"
+        };
+
+        Core.Context.Orders.Add(order);
+        Core.Context.SaveChanges();
+
+        foreach (var item in cartItemsList)
+        {
+            OrderItems orderItem = new OrderItems
+            {
+                OrderId = order.OrderId,
+                ProductId = item.Product.ProductId,
+                Quantity = item.Cart.Quantity,
+                UnitPrice = item.Product.Price
+            };
+
+            Core.Context.OrderItems.Add(orderItem);
+            item.Product.StockQuantity -= item.Cart.Quantity;
+        }
+
+        var userCart = Core.Context.Cart.Where(c => c.UserId == user.UserId).ToList();
+        Core.Context.Cart.RemoveRange(userCart);
+
+        Core.Context.SaveChanges();
+
+        Console.WriteLine($"\nЗаказ №{order.OrderId} успешно оформлен!");
+        Console.WriteLine($"Сумма: {total} руб.");
+        Console.WriteLine($"Статус: {order.Status}");
+    }
+
+    private void ShowOrders(Users user)
+    {
+        Console.WriteLine("\n--- Мои заказы ---");
+
+        var orders = from o in Core.Context.Orders
+                     join p in Core.Context.PickupPoints on o.PickupPointId equals p.PickupPointId
+                     where o.UserId == user.UserId
+                     orderby o.OrderDate descending
+                     select new { Order = o, Point = p };
+
+        // Явное преобразование
+        var ordersList = orders.ToList();
+        if (ordersList.Count == 0)
+        {
+            Console.WriteLine("Заказов нет");
+            return;
+        }
+
+        foreach (var orderInfo in ordersList)
+        {
+            Console.WriteLine($"\nЗаказ №{orderInfo.Order.OrderId} от {orderInfo.Order.OrderDate:dd.MM.yyyy HH:mm}");
+            Console.WriteLine($"Сумма: {orderInfo.Order.TotalAmount} руб.");
+            Console.WriteLine($"Пункт выдачи: {orderInfo.Point.PointName}");
+            Console.WriteLine($"Адрес: {orderInfo.Point.Address}");
+            Console.WriteLine($"Статус: {orderInfo.Order.Status}");
+
+            var items = from oi in Core.Context.OrderItems
+                        join p in Core.Context.Products on oi.ProductId equals p.ProductId
+                        where oi.OrderId == orderInfo.Order.OrderId
+                        select new { Item = oi, Product = p };
+
+            // Явное преобразование
+            var itemsList = items.ToList();
+            Console.WriteLine("Состав заказа:");
+            foreach (var item in itemsList)
+            {
+                Console.WriteLine($"  - {item.Product.ProductName} x{item.Item.Quantity} - {item.Item.UnitPrice} руб./шт.");
+            }
+        }
+    }
+}
+
+
