@@ -48,13 +48,13 @@ using prac8;
                 case "2": Login(); break;
                 case "3": ShowProducts(); break;
                 case "4": Environment.Exit(0); break;
-                default: Console.WriteLine("Неверный выбор!"); break;
+                default: Console.WriteLine("Неверный выбор"); break;
             }
         }
 
         private void ShowUserMenu()
         {
-            Console.WriteLine($"\n--- Личный кабинет ({currentUser.Username}) ---");
+            Console.WriteLine($"\nЛичный кабинет ({currentUser.Username})");
             Console.WriteLine("1 - Товары");
             Console.WriteLine("2 - Корзина");
             Console.WriteLine("3 - Мои заказы");
@@ -69,20 +69,20 @@ using prac8;
                 case "2": ShowCart(currentUser); break;
                 case "3": ShowOrders(currentUser); break;
                 case "4": currentUser = null; break;
-                default: Console.WriteLine("Неверный выбор!"); break;
+                default: Console.WriteLine("Неверный выбор"); break;
             }
         }
 
         private void Register()
         {
-            Console.WriteLine("\n--- Регистрация ---");
+            Console.WriteLine("\nРегистрация");
 
             Console.Write("Логин: ");
             string login = Console.ReadLine();
 
             if (Core.Context.Users.Any(u => u.Username == login))
             {
-                Console.WriteLine("Этот логин уже занят!");
+                Console.WriteLine("Этот логин уже занят");
                 return;
             }
 
@@ -91,7 +91,7 @@ using prac8;
 
             if (Core.Context.Users.Any(u => u.Email == email))
             {
-                Console.WriteLine("Этот email уже используется!");
+                Console.WriteLine("Этот email уже используется");
                 return;
             }
 
@@ -116,7 +116,7 @@ using prac8;
                 }
                 else
                 {
-                    Console.WriteLine("Пароли не совпадают! Попробуйте еще раз.");
+                    Console.WriteLine("Пароли не совпадают");
                 }
             }
 
@@ -133,11 +133,11 @@ using prac8;
             Core.Context.Users.Add(newUser);
             Core.Context.SaveChanges();
 
-            Console.WriteLine("Регистрация успешна!");
+            Console.WriteLine("Регистрация успешна");
         }
     private void Login()
     {
-        Console.WriteLine("\n--- Вход ---");
+        Console.WriteLine("\nВход");
 
         Console.Write("Логин: ");
         string login = Console.ReadLine();
@@ -150,17 +150,17 @@ using prac8;
         if (user != null && password == user.PasswordHash)
         {
             currentUser = user;
-            Console.WriteLine($"Добро пожаловать, {user.FullName}!");
+            Console.WriteLine($"Добро пожаловать, {user.FullName}");
         }
         else
         {
-            Console.WriteLine("Неверный логин или пароль!");
+            Console.WriteLine("Неверный логин или пароль");
         }
     }
 
     private void ShowProducts(Users user = null)
     {
-        Console.WriteLine("\n--- Товары ---");
+        Console.WriteLine("\nТовары");
 
         var products = Core.Context.Products.ToList();
 
@@ -173,9 +173,9 @@ using prac8;
         foreach (var product in products)
         {
             var category = Core.Context.Categories.Find(product.CategoryId);
-            Console.WriteLine($"{product.ProductId}. {product.ProductName} - {product.Price} руб.");
+            Console.WriteLine($"{product.ProductId}. {product.ProductName} - {product.Price} руб");
             Console.WriteLine($"   {product.Description}");
-            Console.WriteLine($"   Категория: {category?.CategoryName}, Осталось: {product.StockQuantity} шт.");
+            Console.WriteLine($"   Категория: {category?.CategoryName}, Осталось: {product.StockQuantity} шт");
             Console.WriteLine();
         }
 
@@ -195,7 +195,7 @@ using prac8;
         }
         else
         {
-            Console.WriteLine("Для покупки необходимо войти в систему.");
+            Console.WriteLine("Для покупки необходимо войти в систему");
             Console.ReadKey();
         }
     }
@@ -205,27 +205,27 @@ using prac8;
         Console.Write("ID товара: ");
         if (!int.TryParse(Console.ReadLine(), out int productId))
         {
-            Console.WriteLine("Ошибка ввода!");
+            Console.WriteLine("Ошибка ввода");
             return;
         }
 
         Products product = Core.Context.Products.Find(productId);
         if (product == null)
         {
-            Console.WriteLine("Товар не найден!");
+            Console.WriteLine("Товар не найден");
             return;
         }
 
         Console.Write("Количество: ");
         if (!int.TryParse(Console.ReadLine(), out int quantity) || quantity <= 0)
         {
-            Console.WriteLine("Неверное количество!");
+            Console.WriteLine("Неверное количество");
             return;
         }
 
         if (quantity > product.StockQuantity)
         {
-            Console.WriteLine("Недостаточно товара на складе!");
+            Console.WriteLine("Недостаточно товара на складе");
             return;
         }
 
@@ -235,7 +235,7 @@ using prac8;
         {
             if (cartItem.Quantity + quantity > product.StockQuantity)
             {
-                Console.WriteLine("Недостаточно товара на складе!");
+                Console.WriteLine("Недостаточно товара на складе");
                 return;
             }
             cartItem.Quantity += quantity;
@@ -253,7 +253,7 @@ using prac8;
         }
 
         Core.Context.SaveChanges();
-        Console.WriteLine("Товар добавлен в корзину!");
+        Console.WriteLine("Товар добавлен в корзину");
     }
 
     private void BuyProduct(Users user)
@@ -261,27 +261,27 @@ using prac8;
         Console.Write("ID товара: ");
         if (!int.TryParse(Console.ReadLine(), out int productId))
         {
-            Console.WriteLine("Ошибка ввода!");
+            Console.WriteLine("Ошибка ввода");
             return;
         }
 
         Products product = Core.Context.Products.Find(productId);
         if (product == null)
         {
-            Console.WriteLine("Товар не найден!");
+            Console.WriteLine("Товар не найден");
             return;
         }
 
         Console.Write("Количество: ");
         if (!int.TryParse(Console.ReadLine(), out int quantity) || quantity <= 0)
         {
-            Console.WriteLine("Неверное количество!");
+            Console.WriteLine("Неверное количество");
             return;
         }
 
         if (quantity > product.StockQuantity)
         {
-            Console.WriteLine("Недостаточно товара на складе!");
+            Console.WriteLine("Недостаточно товара на складе");
             return;
         }
 
@@ -289,7 +289,7 @@ using prac8;
 
         if (points.Count == 0)
         {
-            Console.WriteLine("Нет доступных пунктов выдачи!");
+            Console.WriteLine("Нет доступных пунктов выдачи");
             return;
         }
 
@@ -302,7 +302,7 @@ using prac8;
         Console.Write("Выберите пункт выдачи: ");
         if (!int.TryParse(Console.ReadLine(), out int pointId))
         {
-            Console.WriteLine("Ошибка ввода!");
+            Console.WriteLine("Ошибка ввода");
             return;
         }
 
@@ -333,15 +333,15 @@ using prac8;
 
         Core.Context.SaveChanges();
 
-        Console.WriteLine($"\nЗаказ №{order.OrderId} успешно оформлен!");
+        Console.WriteLine($"\nЗаказ №{order.OrderId} оформлен");
         Console.WriteLine($"Товар: {product.ProductName} x{quantity}");
-        Console.WriteLine($"Сумма: {total} руб.");
+        Console.WriteLine($"Сумма: {total} руб");
         Console.WriteLine($"Статус: {order.Status}");
     }
 
     private void ShowCart(Users user)
     {
-        Console.WriteLine("\n--- Корзина ---");
+        Console.WriteLine("\nКорзина");
 
         var cartItems = from c in Core.Context.Cart
                         join p in Core.Context.Products on c.ProductId equals p.ProductId
@@ -364,10 +364,10 @@ using prac8;
             decimal itemTotal = item.Cart.Quantity * item.Product.Price;
             total += itemTotal;
 
-            Console.WriteLine($"{item.Product.ProductName} x{item.Cart.Quantity} = {itemTotal} руб.");
+            Console.WriteLine($"{item.Product.ProductName} x{item.Cart.Quantity} = {itemTotal} руб");
         }
 
-        Console.WriteLine($"\nИтого: {total} руб.");
+        Console.WriteLine($"\nИтого: {total} руб");
 
         Console.Write("\n1 - Оформить заказ\n2 - Удалить товар\n3 - Назад\nВаш выбор: ");
         string choice = Console.ReadLine();
@@ -387,7 +387,7 @@ using prac8;
         Console.Write("ID товара для удаления: ");
         if (!int.TryParse(Console.ReadLine(), out int productId))
         {
-            Console.WriteLine("Ошибка ввода!");
+            Console.WriteLine("Ошибка ввода");
             return;
         }
 
@@ -397,17 +397,17 @@ using prac8;
         {
             Core.Context.Cart.Remove(item);
             Core.Context.SaveChanges();
-            Console.WriteLine("Товар удален из корзины!");
+            Console.WriteLine("Товар удален из корзины");
         }
         else
         {
-            Console.WriteLine("Товар не найден в корзине!");
+            Console.WriteLine("Товар не найден в корзине");
         }
     }
 
     private void CreateOrderFromCart(Users user)
     {
-        Console.WriteLine("\n--- Оформление заказа из корзины ---");
+        Console.WriteLine("\nОформление заказа из корзины");
 
         var cartItems = from c in Core.Context.Cart
                         join p in Core.Context.Products on c.ProductId equals p.ProductId
@@ -418,7 +418,7 @@ using prac8;
         var cartItemsList = cartItems.ToList();
         if (cartItemsList.Count == 0)
         {
-            Console.WriteLine("Корзина пуста!");
+            Console.WriteLine("Корзина пуста");
             return;
         }
 
@@ -428,7 +428,7 @@ using prac8;
         {
             if (item.Cart.Quantity > item.Product.StockQuantity)
             {
-                Console.WriteLine($"Недостаточно товара '{item.Product.ProductName}' на складе!");
+                Console.WriteLine($"Недостаточно товара '{item.Product.ProductName}' на складе");
                 hasInsufficientStock = true;
             }
         }
@@ -440,7 +440,7 @@ using prac8;
 
         if (points.Count == 0)
         {
-            Console.WriteLine("Нет доступных пунктов выдачи!");
+            Console.WriteLine("Нет доступных пунктов выдачи");
             return;
         }
 
@@ -453,7 +453,7 @@ using prac8;
         Console.Write("Выберите пункт выдачи: ");
         if (!int.TryParse(Console.ReadLine(), out int pointId))
         {
-            Console.WriteLine("Ошибка ввода!");
+            Console.WriteLine("Ошибка ввода");
             return;
         }
 
@@ -465,7 +465,7 @@ using prac8;
             PickupPointId = pointId,
             OrderDate = DateTime.Now,
             TotalAmount = total,
-            Status = "Pending"
+            Status = "ожидается"
         };
 
         Core.Context.Orders.Add(order);
@@ -490,14 +490,14 @@ using prac8;
 
         Core.Context.SaveChanges();
 
-        Console.WriteLine($"\nЗаказ №{order.OrderId} успешно оформлен!");
-        Console.WriteLine($"Сумма: {total} руб.");
+        Console.WriteLine($"\nЗаказ №{order.OrderId} успешно оформлен");
+        Console.WriteLine($"Сумма: {total} руб");
         Console.WriteLine($"Статус: {order.Status}");
     }
 
     private void ShowOrders(Users user)
     {
-        Console.WriteLine("\n--- Мои заказы ---");
+        Console.WriteLine("\nМои заказы");
 
         var orders = from o in Core.Context.Orders
                      join p in Core.Context.PickupPoints on o.PickupPointId equals p.PickupPointId
@@ -516,7 +516,7 @@ using prac8;
         foreach (var orderInfo in ordersList)
         {
             Console.WriteLine($"\nЗаказ №{orderInfo.Order.OrderId} от {orderInfo.Order.OrderDate:dd.MM.yyyy HH:mm}");
-            Console.WriteLine($"Сумма: {orderInfo.Order.TotalAmount} руб.");
+            Console.WriteLine($"Сумма: {orderInfo.Order.TotalAmount} руб");
             Console.WriteLine($"Пункт выдачи: {orderInfo.Point.PointName}");
             Console.WriteLine($"Адрес: {orderInfo.Point.Address}");
             Console.WriteLine($"Статус: {orderInfo.Order.Status}");
@@ -531,8 +531,25 @@ using prac8;
             Console.WriteLine("Состав заказа:");
             foreach (var item in itemsList)
             {
-                Console.WriteLine($"  - {item.Product.ProductName} x{item.Item.Quantity} - {item.Item.UnitPrice} руб./шт.");
+                Console.WriteLine($"  - {item.Product.ProductName} x{item.Item.Quantity} - {item.Item.UnitPrice} руб./шт");
             }
+        }
+    }
+}
+
+class Program
+{
+    static void Main(string[] args)
+    {
+        try
+        {
+            Console.WriteLine("Маркетплейс GMWOG");
+            new MarketplaceGame().RunGame();
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Ошибка: {ex.Message}");
+            Console.ReadKey();
         }
     }
 }
