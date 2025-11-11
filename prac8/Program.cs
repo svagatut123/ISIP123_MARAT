@@ -554,4 +554,95 @@ class Program
     }
 }
 
+//--Создание базы данных
+//CREATE DATABASE maratpr;
+//GO
 
+//USE maratpr;
+//GO
+
+//-- Таблица пользователей
+//CREATE TABLE Users (
+//    UserId INT PRIMARY KEY IDENTITY(1,1),
+//    Username NVARCHAR(50) UNIQUE NOT NULL,
+//    Email NVARCHAR(100) UNIQUE NOT NULL,
+//    PasswordHash NVARCHAR(255) NOT NULL,
+//    PhoneNumber NVARCHAR(20),
+//    FullName NVARCHAR(100) NOT NULL,
+//    CreatedDate DATETIME2 DEFAULT GETDATE()
+//);
+
+//--Таблица категорий товаров
+//CREATE TABLE Categories (
+//    CategoryId INT PRIMARY KEY IDENTITY(1,1),
+//    CategoryName NVARCHAR(50) NOT NULL,
+//    Description NVARCHAR(255)
+//);
+
+//--Таблица товаров
+//CREATE TABLE Products (
+//    ProductId INT PRIMARY KEY IDENTITY(1,1),
+//    ProductName NVARCHAR(100) NOT NULL,
+//    Description NVARCHAR(500),
+//    Price DECIMAL(10,2) NOT NULL,
+//    StockQuantity INT NOT NULL DEFAULT 0,
+//    CategoryId INT FOREIGN KEY REFERENCES Categories(CategoryId),
+//    CreatedDate DATETIME2 DEFAULT GETDATE()
+//);
+
+//--Таблица ПВЗ(пунктов выдачи заказов)
+//CREATE TABLE PickupPoints (
+//    PickupPointId INT PRIMARY KEY IDENTITY(1,1),
+//    PointName NVARCHAR(100) NOT NULL,
+//    Address NVARCHAR(255) NOT NULL,
+//    PhoneNumber NVARCHAR(20),
+//    IsActive BIT DEFAULT 1
+//);
+
+//--Таблица корзины
+//CREATE TABLE Cart (
+//    CartId INT PRIMARY KEY IDENTITY(1,1),
+//    UserId INT FOREIGN KEY REFERENCES Users(UserId),
+//    ProductId INT FOREIGN KEY REFERENCES Products(ProductId),
+//    Quantity INT NOT NULL DEFAULT 1,
+//    AddedDate DATETIME2 DEFAULT GETDATE(),
+//    UNIQUE(UserId, ProductId)
+//);
+
+//--Таблица заказов
+//CREATE TABLE Orders (
+//    OrderId INT PRIMARY KEY IDENTITY(1,1),
+//    UserId INT FOREIGN KEY REFERENCES Users(UserId),
+//    PickupPointId INT FOREIGN KEY REFERENCES PickupPoints(PickupPointId),
+//    OrderDate DATETIME2 DEFAULT GETDATE(),
+//    TotalAmount DECIMAL(10,2) NOT NULL,
+//    Status NVARCHAR(20) DEFAULT 'Pending'
+//);
+
+//--Таблица элементов заказа
+//CREATE TABLE OrderItems (
+//    OrderItemId INT PRIMARY KEY IDENTITY(1,1),
+//    OrderId INT FOREIGN KEY REFERENCES Orders(OrderId),
+//    ProductId INT FOREIGN KEY REFERENCES Products(ProductId),
+//    Quantity INT NOT NULL,
+//    UnitPrice DECIMAL(10,2) NOT NULL
+//);
+
+//--Вставка тестовых данных
+//INSERT INTO Categories (CategoryName, Description) VALUES
+//('Электроника', 'Смартфоны, ноутбуки, планшеты'),
+//('Одежда', 'Одежда и аксессуары'),
+//('Книги', 'Художественная и учебная литература');
+
+//INSERT INTO Products (ProductName, Description, Price, StockQuantity, CategoryId) VALUES
+//('iPhone 15', 'Смартфон Apple iPhone 15', 99999.99, 10, 1),
+//('Samsung Galaxy S24', 'Смартфон Samsung Galaxy S24', 79999.99, 15, 1),
+//('Футболка хлопковая', 'Хлопковая футболка черного цвета', 1999.99, 50, 2),
+//('Джинсы классические', 'Синие джинсы прямого кроя', 3999.99, 30, 2),
+//('Война и мир', 'Роман Л.Н. Толстого', 899.99, 25, 3),
+//('Преступление и наказание', 'Роман Ф.М. Достоевского', 759.99, 20, 3);
+
+//INSERT INTO PickupPoints (PointName, Address, PhoneNumber) VALUES
+//('ПВЗ Центральный', 'ул. Пушкина, д. 1', '+7 (495) 111-11-11'),
+//('ПВЗ Северный', 'ул. Ленина, д. 25', '+7 (495) 222-22-22'),
+//('ПВЗ Южный', 'пр. Мира, д. 10', '+7 (495) 333-33-33');
