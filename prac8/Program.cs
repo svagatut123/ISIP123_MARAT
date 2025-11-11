@@ -1,75 +1,138 @@
-﻿
+﻿using System;
+using System.Collections.Generic;
+using System.Linq;
+using prac8;
 
-//USE GMWOG1_Marketplace;
-//GO
 
-//-- Таблица пользователей
-//CREATE TABLE Users (
-//    UserID INT IDENTITY(1,1) PRIMARY KEY,
-//    Username NVARCHAR(50) UNIQUE NOT NULL,
-//    PasswordHash NVARCHAR(255) NOT NULL,
-//    Email NVARCHAR(100) UNIQUE NOT NULL,
-//    FullName NVARCHAR(100) NOT NULL,
-//    PhoneNumber NVARCHAR(20),
-//    RegistrationDate DATETIME NOT NULL DEFAULT GETDATE(),
-//    LastLoginDate DATETIME NULL
-//);
+    class MarketplaceGame
+    {
+        private Users currentUser;
+        private Random random;
 
-//--Таблица товаров
-//CREATE TABLE Products (
-//    ProductID INT IDENTITY(1,1) PRIMARY KEY,
-//    ProductName NVARCHAR(200) NOT NULL,
-//    Description NVARCHAR(1000) NULL,
-//    Price DECIMAL(10,2) NOT NULL CHECK (Price >= 0),
-//    StockQuantity INT NOT NULL DEFAULT 0 CHECK (StockQuantity >= 0),
-//    Category NVARCHAR(100) NOT NULL,
-//    CreatedDate DATETIME NOT NULL DEFAULT GETDATE(),
-//    IsActive BIT NOT NULL DEFAULT 1
-//);
+        public MarketplaceGame()
+        {
+            random = new Random();
+        }
 
-//--Таблица ПВЗ(пунктов выдачи заказов)
-//CREATE TABLE PickupPoints (
-//    PickupPointID INT IDENTITY(1,1) PRIMARY KEY,
-//    PointName NVARCHAR(200) NOT NULL,
-//    Address NVARCHAR(500) NOT NULL,
-//    PhoneNumber NVARCHAR(20),
-//    WorkingHours NVARCHAR(100),
-//    City NVARCHAR(100) NOT NULL,
-//    IsActive BIT NOT NULL DEFAULT 1
-//);
+        public void RunGame()
+        {
+            
 
-//--Таблица корзины
-//CREATE TABLE Cart (
-//    CartID INT IDENTITY(1,1) PRIMARY KEY,
-//    UserID INT NOT NULL,
-//    ProductID INT NOT NULL,
-//    Quantity INT NOT NULL CHECK (Quantity > 0),
-//    AddedDate DATETIME NOT NULL DEFAULT GETDATE(),
-//    FOREIGN KEY (UserID) REFERENCES Users(UserID),
-//    FOREIGN KEY (ProductID) REFERENCES Products(ProductID),
-//    UNIQUE (UserID, ProductID)
-//);
+            while (true)
+            {
+                if (currentUser == null)
+                {
+                    ShowMainMenu();
+                }
+                else
+                {
+                    ShowUserMenu();
+                }
+            }
+        }
 
-//--Таблица заказов
-//CREATE TABLE Orders (
-//    OrderID INT IDENTITY(1,1) PRIMARY KEY,
-//    UserID INT NOT NULL,
-//    OrderDate DATETIME NOT NULL DEFAULT GETDATE(),
-//    TotalAmount DECIMAL(10,2) NOT NULL CHECK (TotalAmount >= 0),
-//    PickupPointID INT NOT NULL,
-//    Status NVARCHAR(50) NOT NULL DEFAULT 'Обрабатывается',
-//    FOREIGN KEY (UserID) REFERENCES Users(UserID),
-//    FOREIGN KEY (PickupPointID) REFERENCES PickupPoints(PickupPointID)
-//);
+        private void ShowMainMenu()
+        {
+            Console.WriteLine("\nГлавное меню:");
+            Console.WriteLine("1 - Регистрация");
+            Console.WriteLine("2 - Вход");
+            Console.WriteLine("3 - Просмотр товаров");
+            Console.WriteLine("4 - Выход");
+            Console.Write("Ваш выбор: ");
 
-//--Таблица элементов заказа
-//CREATE TABLE OrderItems (
-//    OrderItemID INT IDENTITY(1,1) PRIMARY KEY,
-//    OrderID INT NOT NULL,
-//    ProductID INT NOT NULL,
-//    Quantity INT NOT NULL CHECK (Quantity > 0),
-//    UnitPrice DECIMAL(10,2) NOT NULL CHECK (UnitPrice >= 0),
-//    FOREIGN KEY (OrderID) REFERENCES Orders(OrderID) ON DELETE CASCADE,
-//    FOREIGN KEY (ProductID) REFERENCES Products(ProductID)
-//);
+            string choice = Console.ReadLine();
+
+            switch (choice)
+            {
+                case "1": Register(); break;
+                case "2": Login(); break;
+                case "3": ShowProducts(); break;
+                case "4": Environment.Exit(0); break;
+                default: Console.WriteLine("Неверный выбор!"); break;
+            }
+        }
+
+        private void ShowUserMenu()
+        {
+            Console.WriteLine($"\n--- Личный кабинет ({currentUser.Username}) ---");
+            Console.WriteLine("1 - Товары");
+            Console.WriteLine("2 - Корзина");
+            Console.WriteLine("3 - Мои заказы");
+            Console.WriteLine("4 - Выйти");
+            Console.Write("Ваш выбор: ");
+
+            string choice = Console.ReadLine();
+
+            switch (choice)
+            {
+                case "1": ShowProducts(currentUser); break;
+                case "2": ShowCart(currentUser); break;
+                case "3": ShowOrders(currentUser); break;
+                case "4": currentUser = null; break;
+                default: Console.WriteLine("Неверный выбор!"); break;
+            }
+        }
+
+        private void Register()
+        {
+            Console.WriteLine("\n--- Регистрация ---");
+
+            Console.Write("Логин: ");
+            string login = Console.ReadLine();
+
+            if (Core.Context.Users.Any(u => u.Username == login))
+            {
+                Console.WriteLine("Этот логин уже занят!");
+                return;
+            }
+
+            Console.Write("Email: ");
+            string email = Console.ReadLine();
+
+            if (Core.Context.Users.Any(u => u.Email == email))
+            {
+                Console.WriteLine("Этот email уже используется!");
+                return;
+            }
+
+            Console.Write("Полное имя: ");
+            string fullName = Console.ReadLine();
+
+            Console.Write("Телефон: ");
+            string phone = Console.ReadLine();
+
+            string password;
+            while (true)
+            {
+                Console.Write("Пароль: ");
+                password = Console.ReadLine();
+
+                Console.Write("Повторите пароль: ");
+                string password2 = Console.ReadLine();
+
+                if (password == password2)
+                {
+                    break;
+                }
+                else
+                {
+                    Console.WriteLine("Пароли не совпадают! Попробуйте еще раз.");
+                }
+            }
+
+            Users newUser = new Users
+            {
+                Username = login,
+                Email = email,
+                PasswordHash = password,
+                PhoneNumber = phone,
+                FullName = fullName,
+                CreatedDate = DateTime.Now
+            };
+
+            Core.Context.Users.Add(newUser);
+            Core.Context.SaveChanges();
+
+            Console.WriteLine("Регистрация успешна!");
+        }
 

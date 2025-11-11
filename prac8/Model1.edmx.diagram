@@ -1,0 +1,26 @@
+<?xml version="1.0" encoding="utf-8"?>
+<edmx:Edmx Version="3.0" xmlns:edmx="http://schemas.microsoft.com/ado/2009/11/edmx">
+ <!-- EF Designer content (DO NOT EDIT MANUALLY BELOW HERE) -->
+  <edmx:Designer xmlns="http://schemas.microsoft.com/ado/2009/11/edmx">
+    <!-- Diagram content (shape and connector positions) -->
+    <edmx:Diagrams>
+      <Diagram DiagramId="4f52690469f74ccf9f28caf48f54d549" Name="Diagram1">
+        <EntityTypeShape EntityType="maratprModel.Cart" Width="1.5" PointX="5.25" PointY="2.625" IsExpanded="true" />
+        <EntityTypeShape EntityType="maratprModel.Categories" Width="1.5" PointX="0.75" PointY="3" IsExpanded="true" />
+        <EntityTypeShape EntityType="maratprModel.OrderItems" Width="1.5" PointX="8.25" PointY="2.625" IsExpanded="true" />
+        <EntityTypeShape EntityType="maratprModel.Orders" Width="1.5" PointX="6" PointY="11.5" IsExpanded="true" />
+        <EntityTypeShape EntityType="maratprModel.PickupPoints" Width="1.5" PointX="3.75" PointY="11.75" IsExpanded="true" />
+        <EntityTypeShape EntityType="maratprModel.Products" Width="1.5" PointX="3" PointY="2.375" IsExpanded="true" />
+        <EntityTypeShape EntityType="maratprModel.sysdiagrams" Width="1.5" PointX="5.75" PointY="6.75" IsExpanded="true" />
+        <EntityTypeShape EntityType="maratprModel.Users" Width="1.5" PointX="3" PointY="7.5" IsExpanded="true" />
+        <AssociationConnector Association="maratprModel.FK__Cart__ProductId__47DBAE45" ManuallyRouted="false" />
+        <AssociationConnector Association="maratprModel.FK__Cart__UserId__46E78A0C" ManuallyRouted="false" />
+        <AssociationConnector Association="maratprModel.FK__Products__Catego__3F466844" ManuallyRouted="false" />
+        <AssociationConnector Association="maratprModel.FK__OrderItem__Order__52593CB8" ManuallyRouted="false" />
+        <AssociationConnector Association="maratprModel.FK__OrderItem__Produ__534D60F1" ManuallyRouted="false" />
+        <AssociationConnector Association="maratprModel.FK__Orders__PickupPo__4D94879B" ManuallyRouted="false" />
+        <AssociationConnector Association="maratprModel.FK__Orders__UserId__4CA06362" ManuallyRouted="false" />
+      </Diagram>
+    </edmx:Diagrams>
+  </edmx:Designer>
+</edmx:Edmx>
